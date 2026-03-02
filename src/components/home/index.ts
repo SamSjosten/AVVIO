@@ -13,6 +13,9 @@ export type { SectionHeaderProps, SectionVariant } from "./SectionHeader";
 export { StartingSoonCard } from "./StartingSoonCard";
 export type { StartingSoonCardProps } from "./StartingSoonCard";
 
+export { HeroStatCard } from "./HeroStatCard";
+export type { HeroStatCardProps } from "./HeroStatCard";
+
 // Home-screen-only components
 export { StreakBanner } from "./StreakBanner";
 export type { StreakBannerProps } from "./StreakBanner";

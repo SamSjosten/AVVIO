@@ -11,7 +11,7 @@
 // - Recent Activity section
 // - Completed challenges (collapsible card-style section)
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -44,6 +44,7 @@ import {
   ExpandableChallengeCard,
   SectionHeader,
   StartingSoonCard,
+  HeroStatCard,
 } from "@/components/home";
 import { useToast } from "@/providers/ToastProvider";
 import { BiometricSetupModal } from "@/components/BiometricSetupModal";
@@ -81,14 +82,18 @@ export default function HomeScreenV2() {
     isRespondingToInvite,
   } = useHomeScreenData();
 
-  // Challenge filtering
+  // Featured challenge: promote the first active challenge (ending soonest) to hero position
+  const featuredChallenge = activeChallenges?.[0] ?? null;
+  const remainingChallenges = useMemo(() => activeChallenges?.slice(1), [activeChallenges]);
+
+  // Challenge filtering — operates on remaining challenges (hero card is always visible)
   const {
     activeFilter,
     currentFilterLabel,
     filteredChallenges,
     handleFilterChange,
     handleClearFilter,
-  } = useChallengeFilters(activeChallenges);
+  } = useChallengeFilters(remainingChallenges);
 
   // UI-specific state
   const [completedExpanded, setCompletedExpanded] = useState(false);
@@ -286,6 +291,15 @@ export default function HomeScreenV2() {
         )}
 
         {/* ================================================================ */}
+        {/* HERO STAT - Featured challenge with progress ring + leaderboard */}
+        {/* ================================================================ */}
+        {featuredChallenge && (
+          <View style={{ marginTop: spacing.xl }}>
+            <HeroStatCard challenge={featuredChallenge} />
+          </View>
+        )}
+
+        {/* ================================================================ */}
         {/* PENDING INVITES */}
         {/* ================================================================ */}
         {pendingInvites && pendingInvites.length > 0 && (
@@ -316,65 +330,68 @@ export default function HomeScreenV2() {
         )}
 
         {/* ================================================================ */}
-        {/* IN PROGRESS - Active challenges with expandable cards */}
+        {/* IN PROGRESS - Active challenges with expandable cards            */}
+        {/* Hidden when the only active challenge is in the hero card        */}
         {/* ================================================================ */}
-        <View style={[styles.section, { marginTop: spacing.xl }]}>
-          <SectionHeader
-            title="In Progress"
-            count={activeChallenges?.length || 0}
-            variant="primary"
-          >
-            <ChallengeFilter activeFilter={activeFilter} onFilterChange={handleFilterChange} />
-          </SectionHeader>
-
-          {/* Active Filter Badge */}
-          <ActiveFilterBadge
-            filter={activeFilter}
-            label={currentFilterLabel}
-            onClear={handleClearFilter}
-          />
-
-          {!activeChallenges || activeChallenges.length === 0 ? (
-            <EmptyState
-              variant="challenges"
-              actionLabel="Create Challenge"
-              onAction={() => router.push("/challenge/create")}
-            />
-          ) : filteredChallenges.length === 0 ? (
-            <View
-              style={[
-                styles.noMatchCard,
-                {
-                  backgroundColor: colors.surface,
-                  borderRadius: radius.xl,
-                  padding: spacing.lg,
-                },
-              ]}
+        {(!featuredChallenge || (remainingChallenges && remainingChallenges.length > 0)) && (
+          <View style={[styles.section, { marginTop: spacing.xl }]}>
+            <SectionHeader
+              title="In Progress"
+              count={remainingChallenges?.length || 0}
+              variant="primary"
             >
-              <Text style={[styles.noMatchText, { color: colors.textSecondary }]}>
-                No challenges match this filter
-              </Text>
-              <TouchableOpacity onPress={handleClearFilter}>
-                <Text style={[styles.showAllText, { color: colors.primary.main }]}>
-                  Show all challenges
+              <ChallengeFilter activeFilter={activeFilter} onFilterChange={handleFilterChange} />
+            </SectionHeader>
+
+            {/* Active Filter Badge */}
+            <ActiveFilterBadge
+              filter={activeFilter}
+              label={currentFilterLabel}
+              onClear={handleClearFilter}
+            />
+
+            {!remainingChallenges || remainingChallenges.length === 0 ? (
+              <EmptyState
+                variant="challenges"
+                actionLabel="Create Challenge"
+                onAction={() => router.push("/challenge/create")}
+              />
+            ) : filteredChallenges.length === 0 ? (
+              <View
+                style={[
+                  styles.noMatchCard,
+                  {
+                    backgroundColor: colors.surface,
+                    borderRadius: radius.xl,
+                    padding: spacing.lg,
+                  },
+                ]}
+              >
+                <Text style={[styles.noMatchText, { color: colors.textSecondary }]}>
+                  No challenges match this filter
                 </Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={{ gap: spacing.sm }}>
-              {(activeFilter !== "all" ? filteredChallenges : filteredChallenges.slice(0, 5)).map(
-                (challenge) => (
-                  <ExpandableChallengeCard
-                    key={challenge.id}
-                    challenge={challenge}
-                    isExpanded={expandedCardId === challenge.id}
-                    onToggleExpand={() => handleToggleCardExpand(challenge.id)}
-                  />
-                ),
-              )}
-            </View>
-          )}
-        </View>
+                <TouchableOpacity onPress={handleClearFilter}>
+                  <Text style={[styles.showAllText, { color: colors.primary.main }]}>
+                    Show all challenges
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={{ gap: spacing.sm }}>
+                {(activeFilter !== "all" ? filteredChallenges : filteredChallenges.slice(0, 5)).map(
+                  (challenge) => (
+                    <ExpandableChallengeCard
+                      key={challenge.id}
+                      challenge={challenge}
+                      isExpanded={expandedCardId === challenge.id}
+                      onToggleExpand={() => handleToggleCardExpand(challenge.id)}
+                    />
+                  ),
+                )}
+              </View>
+            )}
+          </View>
+        )}
 
         {/* ================================================================ */}
         {/* STARTING SOON - Amber themed cards */}
