@@ -4,7 +4,7 @@
 // =============================================================================
 
 import { Platform } from "react-native";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient, getUserId } from "@/lib/supabase";
 import type {
   IHealthService,
   IHealthProvider,
@@ -17,7 +17,7 @@ import type {
   ChallengeForSync,
   ConnectionStatus,
   HealthPermission,
-  ChallengeType,
+  RecentHealthActivity,
   LogHealthActivityResult,
 } from "./types";
 import { HealthKitProvider, MockHealthProvider } from "./providers";
@@ -33,13 +33,6 @@ const DEFAULT_SYNC_OPTIONS: Required<SyncOptions> = {
 const BACKGROUND_LOOKBACK_DAYS = 3;
 const MANUAL_LOOKBACK_DAYS = 7;
 const INITIAL_LOOKBACK_DAYS = 30;
-
-async function getUserId(): Promise<string | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user?.id ?? null;
-}
 
 export class HealthService implements IHealthService {
   private provider: IHealthProvider;
@@ -73,15 +66,16 @@ export class HealthService implements IHealthService {
       return { status: "disconnected", connection: null, lastSync: null };
     }
 
-    const { data: connection, error } = await supabase
+    // maybeSingle(): returns null data (not an error) when no connection exists
+    const { data: connection, error } = await getSupabaseClient()
       .rpc("get_health_connection", { p_provider: this.providerType })
-      .single();
+      .maybeSingle();
 
     if (error || !connection) {
       return { status: "disconnected", connection: null, lastSync: null };
     }
 
-    const { data: activeSyncs } = await supabase
+    const { data: activeSyncs } = await getSupabaseClient()
       .from("health_sync_logs")
       .select("id")
       .eq("user_id", userId)
@@ -118,7 +112,7 @@ export class HealthService implements IHealthService {
       throw new Error("No health permissions were granted");
     }
 
-    const { data: connectionId, error } = await supabase.rpc("connect_health_provider", {
+    const { data: connectionId, error } = await getSupabaseClient().rpc("connect_health_provider", {
       p_provider: this.providerType,
       p_permissions: permissionResult.granted,
     });
@@ -127,9 +121,14 @@ export class HealthService implements IHealthService {
       throw new Error(`Failed to save health connection: ${error.message}`);
     }
 
-    const { data: connection } = await supabase
+    // Row guaranteed to exist after connect_health_provider upsert, so .single() is correct
+    const { data: connection, error: fetchError } = await getSupabaseClient()
       .rpc("get_health_connection", { p_provider: this.providerType })
       .single();
+
+    if (fetchError || !connection) {
+      throw new Error("Failed to fetch health connection after connect");
+    }
 
     try {
       await this.sync({
@@ -144,7 +143,7 @@ export class HealthService implements IHealthService {
   }
 
   async disconnect(): Promise<void> {
-    const { error } = await supabase.rpc("disconnect_health_provider", {
+    const { error } = await getSupabaseClient().rpc("disconnect_health_provider", {
       p_provider: this.providerType,
     });
 
@@ -153,11 +152,11 @@ export class HealthService implements IHealthService {
     }
   }
 
-  async sync(options: SyncOptions = {}): Promise<SyncResult> {
+  async sync(options?: SyncOptions): Promise<SyncResult> {
     const startTime = Date.now();
     const opts = { ...DEFAULT_SYNC_OPTIONS, ...options };
 
-    if (!options.lookbackDays) {
+    if (!options?.lookbackDays) {
       switch (opts.syncType) {
         case "background":
           opts.lookbackDays = BACKGROUND_LOOKBACK_DAYS;
@@ -170,10 +169,13 @@ export class HealthService implements IHealthService {
       }
     }
 
-    const { data: syncLogId, error: logError } = await supabase.rpc("start_health_sync", {
-      p_provider: this.providerType,
-      p_sync_type: opts.syncType,
-    });
+    const { data: syncLogId, error: logError } = await getSupabaseClient().rpc(
+      "start_health_sync",
+      {
+        p_provider: this.providerType,
+        p_sync_type: opts.syncType,
+      },
+    );
 
     if (logError || !syncLogId) {
       throw new Error(`Failed to start sync log: ${logError?.message}`);
@@ -199,7 +201,7 @@ export class HealthService implements IHealthService {
 
       const activities = await transformSamples(samples, this.providerType);
 
-      const { data: challenges } = await supabase.rpc("get_challenges_for_health_sync");
+      const { data: challenges } = await getSupabaseClient().rpc("get_challenges_for_health_sync");
 
       const assignedActivities = assignChallengesToActivities(
         activities,
@@ -214,7 +216,7 @@ export class HealthService implements IHealthService {
         result.total_processed,
         result.inserted,
         result.deduplicated,
-        result.errors.length > 0 ? result.errors.map((e) => e.error).join("; ") : null,
+        result.errors.length > 0 ? result.errors.map((e) => e.error).join("; ") : undefined,
       );
 
       return {
@@ -251,8 +253,9 @@ export class HealthService implements IHealthService {
     for (let i = 0; i < activities.length; i += BATCH_SIZE) {
       const batch = activities.slice(i, i + BATCH_SIZE);
 
-      const { data, error } = await supabase.rpc("log_health_activity", {
-        p_activities: batch,
+      // RPC expects Json — serialize ProcessedActivity[] to plain JSON-compatible objects
+      const { data, error } = await getSupabaseClient().rpc("log_health_activity", {
+        p_activities: JSON.parse(JSON.stringify(batch)),
       });
 
       if (error) {
@@ -260,7 +263,7 @@ export class HealthService implements IHealthService {
         continue;
       }
 
-      const result = data as LogHealthActivityResult;
+      const result = data as unknown as LogHealthActivityResult;
       totalInserted += result.inserted;
       totalDeduplicated += result.deduplicated;
       allErrors.push(...result.errors);
@@ -280,9 +283,9 @@ export class HealthService implements IHealthService {
     recordsProcessed: number,
     recordsInserted: number,
     recordsDeduplicated: number,
-    errorMessage?: string | null,
+    errorMessage?: string,
   ): Promise<void> {
-    await supabase.rpc("complete_health_sync", {
+    await getSupabaseClient().rpc("complete_health_sync", {
       p_log_id: syncLogId,
       p_status: status,
       p_records_processed: recordsProcessed,
@@ -298,7 +301,7 @@ export class HealthService implements IHealthService {
       return [];
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from("health_sync_logs")
       .select("*")
       .eq("user_id", userId)
@@ -314,8 +317,8 @@ export class HealthService implements IHealthService {
     return data as HealthSyncLog[];
   }
 
-  async getRecentActivities(limit = 50, offset = 0): Promise<ProcessedActivity[]> {
-    const { data, error } = await supabase.rpc("get_recent_health_activities", {
+  async getRecentActivities(limit = 50, offset = 0): Promise<RecentHealthActivity[]> {
+    const { data, error } = await getSupabaseClient().rpc("get_recent_health_activities", {
       p_limit: limit,
       p_offset: offset,
     });
@@ -325,7 +328,7 @@ export class HealthService implements IHealthService {
       return [];
     }
 
-    return data as ProcessedActivity[];
+    return data as RecentHealthActivity[];
   }
 }
 

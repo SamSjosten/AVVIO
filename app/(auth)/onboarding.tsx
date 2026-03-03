@@ -360,13 +360,18 @@ export default function OnboardingScreen() {
    */
   const markOnboardingComplete = async (): Promise<boolean> => {
     try {
-      const { error } = await getSupabaseClient().auth.updateUser({
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.auth.updateUser({
         data: { onboarding_completed: true },
       });
       if (error) {
         console.error("[Onboarding] Failed to update user metadata:", error);
         return false;
       }
+
+      // updateUser() emits USER_UPDATED, which AuthProvider handles
+      // by updating React state with the new session metadata.
+      // ProtectedRoute will see onboarding_completed=true immediately.
       return true;
     } catch (err) {
       console.error("[Onboarding] Error updating metadata:", err);

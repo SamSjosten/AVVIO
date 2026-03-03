@@ -11,6 +11,7 @@
 //    - INITIAL_SESSION → bootstrap on app launch (load profile)
 //    - SIGNED_OUT      → clear all state
 //    - TOKEN_REFRESHED → update session reference silently (no profile reload)
+//    - USER_UPDATED    → update session/user when metadata changes
 //    - Everything else → IGNORED (calling methods own those flows)
 //
 // 2. CALLING METHODS (own their full flow):
@@ -20,7 +21,7 @@
 //      (c) Load the profile
 //      (d) Set state
 //
-// Because the listener ignores SIGNED_IN / USER_UPDATED, there is no
+// Because the listener ignores SIGNED_IN, there is no
 // coordination flag needed. No race conditions. No skip logic.
 // =============================================================================
 
@@ -263,9 +264,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       // =================================================================
+      // USER_UPDATED: Update session/user when metadata changes.
+      // updateUser() writes to the server and emits this event with the
+      // updated session. Unlike SIGNED_IN (which calling methods handle
+      // end-to-end with profile loading), USER_UPDATED just means
+      // "user object changed" and carries no complex side effects.
+      // Handling it here ensures any updateUser() call, anywhere in the
+      // codebase, automatically propagates to React state.
+      // =================================================================
+      if (event === "USER_UPDATED") {
+        if (!bootstrapComplete) {
+          console.log(`[AuthProvider] ⏭️ Skipping USER_UPDATED before bootstrap`);
+          return;
+        }
+        console.log(`[AuthProvider] 📝 User updated — updating session`);
+        setState((prev) => ({
+          ...prev,
+          session,
+          user: session!.user,
+        }));
+        return;
+      }
+
+      // =================================================================
       // ALL OTHER EVENTS: Ignored.
-      // SIGNED_IN, USER_UPDATED, etc. are side effects of actions that
-      // calling methods already handle end-to-end.
+      // SIGNED_IN is a side effect of sign-in methods that already
+      // handle their full flow end-to-end.
       // =================================================================
       console.log(`[AuthProvider] ⏭️ Ignoring ${event} — caller owns this flow`);
     });
@@ -349,7 +373,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
    *   - created_at is within the last 2 minutes (just provisioned by Supabase)
    *
    * NOTE: Calling updateUser() triggers a USER_UPDATED event in the listener,
-   * which is safely ignored by our clean ownership model.
+   * which updates React state with the new session. This is harmless here
+   * because loadProfileAndSetState() runs afterward and sets the same
+   * session plus the profile — the final state is identical either way.
    */
   const ensureNewUserOnboarding = useCallback(async (session: Session) => {
     const metadata = session.user.user_metadata;

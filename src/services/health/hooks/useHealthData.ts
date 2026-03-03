@@ -7,7 +7,7 @@ import { useCallback } from "react";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { getHealthService } from "../healthService";
 import { healthQueryKeys } from "./useHealthConnection";
-import type { ProcessedActivity, ChallengeType } from "../types";
+import type { RecentHealthActivity, ChallengeType } from "../types";
 
 export interface UseHealthDataOptions {
   pageSize?: number;
@@ -16,7 +16,7 @@ export interface UseHealthDataOptions {
 }
 
 export interface UseHealthDataResult {
-  activities: ProcessedActivity[];
+  activities: RecentHealthActivity[];
   isLoading: boolean;
   isFetchingNextPage: boolean;
   hasNextPage: boolean;

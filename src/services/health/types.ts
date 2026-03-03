@@ -73,6 +73,22 @@ export interface ProcessedActivity {
 }
 
 /**
+ * Activity returned from the get_recent_health_activities RPC.
+ * Different shape from ProcessedActivity — includes id/challenge_title,
+ * does NOT include source_external_id.
+ */
+export interface RecentHealthActivity {
+  id: string;
+  activity_type: ChallengeType;
+  value: number;
+  unit: string;
+  source: string;
+  recorded_at: string;
+  challenge_id: string;
+  challenge_title: string;
+}
+
+/**
  * Result of a batch log operation from the database RPC.
  */
 export interface LogHealthActivityResult {
@@ -110,16 +126,15 @@ export interface HealthSyncLog {
 
 /**
  * Health provider connection from the database.
+ * Matches the columns returned by get_health_connection RPC.
  */
 export interface HealthConnection {
   id: string;
-  user_id: string;
-  provider: HealthProvider;
+  provider: string;
   connected_at: string;
   last_sync_at: string | null;
   permissions_granted: string[];
   is_active: boolean;
-  disconnected_at: string | null;
 }
 
 /**
@@ -140,11 +155,12 @@ export interface ChallengeForSync {
 
 /**
  * Options for initiating a health sync.
+ * All fields are optional — defaults are applied by HealthService.sync().
  */
 export interface SyncOptions {
-  /** Type of sync (affects logging and behavior) */
-  syncType: SyncType;
-  /** How far back to fetch data (default: 7 days for background, 30 for manual) */
+  /** Type of sync (affects logging and behavior). Default: "manual" */
+  syncType?: SyncType;
+  /** How far back to fetch data (default: 7 days for manual, 3 for background, 30 for initial) */
   lookbackDays?: number;
   /** Activity types to sync (default: all) */
   activityTypes?: ChallengeType[];
@@ -253,6 +269,6 @@ export interface IHealthService {
   /** Get recent sync logs */
   getSyncHistory(limit?: number): Promise<HealthSyncLog[]>;
 
-  /** Get recent health activities */
-  getRecentActivities(limit?: number, offset?: number): Promise<ProcessedActivity[]>;
+  /** Get recent health activities from the database */
+  getRecentActivities(limit?: number, offset?: number): Promise<RecentHealthActivity[]>;
 }

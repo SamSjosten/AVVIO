@@ -23,6 +23,7 @@ export type {
   ChallengeType,
   HealthSample,
   ProcessedActivity,
+  RecentHealthActivity,
   LogHealthActivityResult,
   HealthSyncLog,
   HealthConnection,
