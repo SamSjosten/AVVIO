@@ -58,6 +58,14 @@
       "expo-font",
       "@react-native-community/datetimepicker",
       [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Avvio reads your health data to track fitness challenges with friends.",
+          "NSHealthUpdateUsageDescription": false,
+          "background": false
+        }
+      ],
+      [
         "expo-notifications",
         {
           "icon": "./assets/icon.png",

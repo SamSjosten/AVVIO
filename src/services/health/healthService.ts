@@ -99,7 +99,13 @@ export class HealthService implements IHealthService {
   }
 
   async connect(
-    permissions: HealthPermission[] = ["steps", "activeMinutes", "calories"],
+    permissions: HealthPermission[] = [
+      "steps",
+      "activeMinutes",
+      "calories",
+      "distance",
+      "workouts",
+    ],
   ): Promise<HealthConnection> {
     const isAvailable = await this.provider.isAvailable();
     if (!isAvailable) {

@@ -21,6 +21,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { authService } from "@/services/auth";
 import { getSupabaseClient } from "@/lib/supabase";
 import { useNavigationStore } from "@/stores/navigationStore";
+import { useHealthConnection } from "@/services/health";
 
 // =============================================================================
 // TYPES
@@ -310,6 +311,9 @@ export default function OnboardingScreen() {
   // Navigation lock - prevents ProtectedRoute from interfering during transition
   const setAuthHandlingNavigation = useNavigationStore((state) => state.setAuthHandlingNavigation);
 
+  // Real health connection via HealthKit/Google Fit
+  const { connect: connectHealth, isConnecting: isHealthConnecting } = useHealthConnection();
+
   // Breathing animation for icons
   const breatheAnim = useRef(new Animated.Value(0)).current;
 
@@ -379,15 +383,27 @@ export default function OnboardingScreen() {
     }
   };
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     if (!selectedPlatform) return;
 
     setPhase("connecting");
 
-    // Simulate connection (replace with actual health kit integration)
-    setTimeout(() => {
+    try {
+      // Request HealthKit/Google Fit permissions and save connection to Supabase.
+      // This triggers the native iOS/Android health permissions dialog.
+      await connectHealth();
       setPhase("success");
-    }, 2500);
+    } catch (error) {
+      console.error("[Onboarding] Health connect failed:", error);
+      setPhase("connect");
+      Alert.alert(
+        "Connection Failed",
+        error instanceof Error
+          ? error.message
+          : "Could not connect to health data. You can try again or track manually.",
+        [{ text: "OK" }],
+      );
+    }
   };
 
   const handleComplete = async () => {
