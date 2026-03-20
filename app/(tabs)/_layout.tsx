@@ -96,6 +96,9 @@ function NotificationBell() {
       testID={TestIDs.nav.notificationBell}
       style={styles.notificationBell}
       onPress={() => router.push("/notifications")}
+      accessibilityLabel="Notifications"
+      accessibilityRole="button"
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
       <BellIcon size={24} color={colors.textSecondary} />
       {unreadCount !== undefined && unreadCount > 0 && (
@@ -131,6 +134,8 @@ function CreateButton() {
           },
         ]}
         onPress={() => router.push("/challenge/create")}
+        accessibilityLabel="Create a new challenge"
+        accessibilityRole="button"
       >
         <PlusIcon size={28} color="#FFFFFF" strokeWidth={2.5} />
       </Pressable>

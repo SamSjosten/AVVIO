@@ -11,6 +11,7 @@ module.exports = {
       moduleNameMapper: {
         "^@/(.*)$": "<rootDir>/src/$1",
         "^react-native-url-polyfill/auto$": "<rootDir>/jest.emptyModule.js",
+        "^@sentry/react-native$": "<rootDir>/jest.emptyModule.js",
       },
       // Match unit tests (in __tests__ folders but NOT .integration.test.ts or .component.test.tsx)
       testMatch: ["<rootDir>/src/**/__tests__/**/*.test.ts"],

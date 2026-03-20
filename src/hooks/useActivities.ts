@@ -7,6 +7,7 @@ import { activityService } from "@/services/activities";
 import { useAuth } from "@/providers/AuthProvider";
 import { activityKeys } from "@/lib/queryKeys";
 import type { ActivityLog } from "@/types/database-helpers";
+import { formatDate } from "@/lib/formatDate";
 
 // =============================================================================
 // QUERY KEYS — re-exported from @/lib/queryKeys for backward compatibility
@@ -111,10 +112,7 @@ export function toDisplayActivity(activity: ActivityLog): DisplayActivity {
   } else if (diffDays < 7) {
     displayDate = recordedAt.toLocaleDateString(undefined, { weekday: "long" });
   } else {
-    displayDate = recordedAt.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-    });
+    displayDate = formatDate(activity.recorded_at, "medium");
   }
 
   const displayTime = recordedAt.toLocaleTimeString(undefined, {

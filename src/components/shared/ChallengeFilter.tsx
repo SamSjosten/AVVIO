@@ -101,6 +101,9 @@ export function ChallengeFilter({
           },
         ]}
         activeOpacity={0.7}
+        accessibilityLabel={isFiltered ? "Clear filter" : "Filter challenges"}
+        accessibilityRole="button"
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
         <FunnelIcon size={14} color={isFiltered ? colors.primary.main : colors.textMuted} />
       </TouchableOpacity>

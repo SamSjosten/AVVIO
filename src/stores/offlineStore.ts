@@ -86,6 +86,7 @@ export interface ProcessQueueResult {
   processed: number;
   succeeded: number;
   failed: number;
+  expired: number;
   remaining: number;
 }
 
@@ -95,6 +96,14 @@ export interface ProcessQueueResult {
 
 const MAX_RETRIES = 5;
 const STORE_KEY = "fitchallenge-offline-queue";
+
+// TTL per action type — expired items are dropped without execution
+const TTL_BY_TYPE: Record<QueuedActionType, number> = {
+  LOG_ACTIVITY: 4 * 60 * 60 * 1000, // 4h — time-sensitive
+  LOG_WORKOUT: 4 * 60 * 60 * 1000, // 4h — time-sensitive
+  ACCEPT_INVITE: 72 * 60 * 60 * 1000, // 72h — social, less urgent
+  SEND_FRIEND_REQUEST: 72 * 60 * 60 * 1000, // 72h — social, less urgent
+};
 
 // =============================================================================
 // AUTH ERROR DETECTION
@@ -273,18 +282,20 @@ export const useOfflineStore = create<OfflineStoreState & OfflineStoreActions>()
             processed: 0,
             succeeded: 0,
             failed: 0,
+            expired: 0,
             remaining: queue.length,
           };
         }
 
         if (queue.length === 0) {
-          return { processed: 0, succeeded: 0, failed: 0, remaining: 0 };
+          return { processed: 0, succeeded: 0, failed: 0, expired: 0, remaining: 0 };
         }
 
         set({ isProcessing: true });
 
         let succeeded = 0;
         let failed = 0;
+        let expired = 0;
         const toRemove: string[] = [];
         const toUpdate: QueuedItem[] = [];
 
@@ -302,6 +313,7 @@ export const useOfflineStore = create<OfflineStoreState & OfflineStoreActions>()
               processed: 0,
               succeeded: 0,
               failed: 0,
+              expired: 0,
               remaining: queue.length,
             };
           }
@@ -309,6 +321,22 @@ export const useOfflineStore = create<OfflineStoreState & OfflineStoreActions>()
           // Process in order (FIFO)
           for (const item of [...queue]) {
             try {
+              // TTL check — drop stale items without executing
+              const ttl = TTL_BY_TYPE[item.action.type];
+              const age = item.createdAt
+                ? Date.now() - item.createdAt
+                : Infinity;
+              if (age > ttl) {
+                toRemove.push(item.id);
+                expired++;
+                console.warn(
+                  `[OfflineQueue] Expired (${Math.round(age / 3600000)}h old):`,
+                  item.action.type,
+                  item.id,
+                );
+                continue;
+              }
+
               // C3: Cross-account guard — drop items queued by a different user.
               // Items without queuedByUserId (legacy persisted) skip this check.
               if (
@@ -397,9 +425,10 @@ export const useOfflineStore = create<OfflineStoreState & OfflineStoreActions>()
         }
 
         const result: ProcessQueueResult = {
-          processed: succeeded + failed,
+          processed: succeeded + failed + expired,
           succeeded,
           failed,
+          expired,
           remaining: get().queue.length,
         };
 

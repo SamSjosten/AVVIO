@@ -44,9 +44,11 @@ export interface HomeScreenData {
   currentStreak: number;
   unreadCount: number | undefined;
 
-  // Loading states
+  // Loading / error states
   isLoading: boolean;
   isRefreshing: boolean;
+  isError: boolean;
+  error: Error | null;
 
   // Actions
   handleRefresh: () => Promise<void>;
@@ -114,6 +116,8 @@ export function useHomeScreenData(): HomeScreenData {
   const {
     data: allActiveChallenges,
     isLoading: loadingActive,
+    isError: errorActive,
+    error: activeError,
     refetch: refetchActive,
   } = useActiveChallenges();
 
@@ -127,6 +131,8 @@ export function useHomeScreenData(): HomeScreenData {
   const {
     data: pendingInvites,
     isLoading: loadingPending,
+    isError: errorPending,
+    error: pendingError,
     refetch: refetchPending,
   } = usePendingInvites();
 
@@ -212,9 +218,11 @@ export function useHomeScreenData(): HomeScreenData {
     currentStreak,
     unreadCount,
 
-    // Loading states - show loading until primary data is ready
+    // Loading / error states
     isLoading: loadingActive || loadingPending,
     isRefreshing: refreshing,
+    isError: errorActive || errorPending,
+    error: (activeError ?? pendingError) as Error | null,
 
     // Actions
     handleRefresh,

@@ -333,6 +333,9 @@ export function NotificationsScreen() {
             }
           }}
           style={{ marginRight: 8, padding: 4 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <ChevronLeftIcon size={24} color={colors.textPrimary} />
         </TouchableOpacity>

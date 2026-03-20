@@ -162,7 +162,7 @@ export async function setupBiometricSignIn(
   email: string,
   password: string,
 ): Promise<BiometricSignInResult> {
-  console.log(`${LOG} 🔧 SETUP starting for ${email.substring(0, 3)}***`);
+  if (__DEV__) console.log(`${LOG} SETUP starting for ${email.substring(0, 3)}***`);
   try {
     // First, authenticate to confirm user wants to set this up
     console.log(`${LOG} Step 1: Requesting biometric authentication...`);
@@ -173,10 +173,10 @@ export async function setupBiometricSignIn(
       fallbackLabel: "Use Passcode",
     });
     const authError = "error" in authResult ? authResult.error : undefined;
-    console.log(`${LOG} Auth result: success=${authResult.success}, error=${authError}`);
+    if (__DEV__) console.log(`${LOG} Auth result: success=${authResult.success}, error=${authError}`);
 
     if (!authResult.success) {
-      console.log(`${LOG} ❌ Setup cancelled/failed: ${authError}`);
+      if (__DEV__) console.log(`${LOG} Setup cancelled/failed: ${authError}`);
 
       // Check for specific error types (expo-local-authentication error codes)
       if (authError === "user_cancel" || authError === "system_cancel") {
@@ -360,7 +360,7 @@ export async function performBiometricSignIn(
       };
     }
 
-    console.log(`${LOG} Step 3: Signing in as ${credentials.email.substring(0, 3)}***...`);
+    if (__DEV__) console.log(`${LOG} Step 3: Signing in as ${credentials.email.substring(0, 3)}***...`);
 
     // Perform sign-in through AuthProvider for consistent state management
     // This ensures authActionHandledRef is set correctly, preventing the bug where

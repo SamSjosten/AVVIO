@@ -40,6 +40,7 @@ describe("invalidateAfterSync", () => {
       processed: 2,
       succeeded: 2,
       failed: 0,
+      expired: 0,
       remaining: 0,
     };
 
@@ -60,6 +61,7 @@ describe("invalidateAfterSync", () => {
       processed: 0,
       succeeded: 0,
       failed: 0,
+      expired: 0,
       remaining: 0,
     };
 
@@ -74,6 +76,7 @@ describe("invalidateAfterSync", () => {
       processed: 3,
       succeeded: 0,
       failed: 3,
+      expired: 0,
       remaining: 3,
     };
 
@@ -90,6 +93,7 @@ describe("invalidateAfterSync", () => {
       processed: 0,
       succeeded: 0,
       failed: 0,
+      expired: 0,
       remaining: 5,
     };
 
@@ -104,6 +108,7 @@ describe("invalidateAfterSync", () => {
       processed: 5,
       succeeded: 3,
       failed: 2,
+      expired: 0,
       remaining: 2,
     };
 
@@ -118,6 +123,7 @@ describe("invalidateAfterSync", () => {
       processed: 1,
       succeeded: 1,
       failed: 0,
+      expired: 0,
       remaining: 0,
     };
 

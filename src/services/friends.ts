@@ -2,6 +2,7 @@
 // Friends management service
 
 import { getSupabaseClient, withAuth } from "@/lib/supabase";
+import { captureError, addBreadcrumb } from "@/lib/sentry";
 import {
   validate,
   sendFriendRequestSchema,
@@ -187,7 +188,10 @@ export const friendsService = {
 
       if (notifyError) {
         console.error("Failed to send friend request notification:", notifyError);
+        captureError(notifyError, { context: "friend-request-notification" });
       }
+
+      addBreadcrumb("friend_request_sent");
     });
   },
 
@@ -205,6 +209,8 @@ export const friendsService = {
         .eq("id", friendship_id);
 
       if (error) throw error;
+
+      addBreadcrumb("friend_request_accepted");
     });
   },
 

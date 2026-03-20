@@ -36,6 +36,8 @@ export function FriendRow({ friend, onPress, onRemove }: FriendRowProps) {
       onPress={onPress}
       activeOpacity={0.7}
       disabled={!onPress}
+      accessibilityLabel={`${profile.display_name || profile.username} profile`}
+      accessibilityRole="button"
     >
       <Avatar uri={profile.avatar_url} name={profile.display_name || profile.username} size="md" />
       <View style={styles.content}>
@@ -105,6 +107,8 @@ export function FriendRequestRow({
           onPress={() => onDecline(request.id)}
           disabled={loading}
           activeOpacity={0.7}
+          accessibilityLabel={`Decline friend request from ${profile.display_name || profile.username}`}
+          accessibilityRole="button"
         >
           <XMarkIcon size={18} color={colors.textSecondary} />
           <Text style={[styles.actionText, { color: colors.textSecondary }]}>Decline</Text>
@@ -121,6 +125,8 @@ export function FriendRequestRow({
           onPress={() => onAccept(request.id)}
           disabled={loading}
           activeOpacity={0.7}
+          accessibilityLabel={`Accept friend request from ${profile.display_name || profile.username}`}
+          accessibilityRole="button"
         >
           <CheckIcon size={18} color="#FFFFFF" />
           <Text style={[styles.actionText, { color: "#FFFFFF" }]}>Accept</Text>
@@ -178,6 +184,8 @@ export function SearchResultRow({
         onPress={() => onSendRequest(user.id)}
         disabled={loading || alreadySent}
         activeOpacity={0.7}
+        accessibilityLabel={alreadySent ? `Friend request sent to ${user.display_name || user.username}` : `Add ${user.display_name || user.username} as friend`}
+        accessibilityRole="button"
       >
         {alreadySent ? (
           <Text style={[styles.addButtonText, { color: colors.textMuted }]}>Sent</Text>

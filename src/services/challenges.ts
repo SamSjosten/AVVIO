@@ -13,6 +13,7 @@ import {
 } from "@/lib/validation";
 import type { Challenge, ChallengeParticipant, ProfilePublic } from "@/types/database-helpers";
 import { getServerNow } from "@/lib/serverTime";
+import { captureError, addBreadcrumb } from "@/lib/sentry";
 
 // =============================================================================
 // RPC RESPONSE VALIDATION
@@ -235,6 +236,9 @@ export const challengeService = {
       if (error.message?.includes("invalid_goal_value")) {
         throw new Error("Goal value must be positive");
       }
+      if (error.message?.includes("start_date_in_past")) {
+        throw new Error("Start date must be in the future");
+      }
       throw error;
     }
 
@@ -242,6 +246,7 @@ export const challengeService = {
       throw new Error("Failed to create challenge: no data returned");
     }
 
+    addBreadcrumb("challenge_created", { challenge_type: validated.challenge_type });
     return challenge as Challenge;
     });
   },
@@ -437,7 +442,10 @@ export const challengeService = {
       // Log but don't fail on notification error
       if (notifyError) {
         console.error("Failed to send invite notification:", notifyError);
+        captureError(notifyError, { context: "challenge-invite-notification" });
       }
+
+      addBreadcrumb("challenge_user_invited");
     });
   },
 
@@ -465,6 +473,8 @@ export const challengeService = {
         }
         throw error;
       }
+
+      addBreadcrumb("challenge_invite_responded", { response });
     });
   },
 

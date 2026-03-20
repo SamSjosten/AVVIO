@@ -265,6 +265,8 @@ export function NotificationRow({
           <TouchableOpacity
             onPress={onPress}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityHint="Swipe left to archive"
             style={[
               styles.content,
               showBorder && {
@@ -338,6 +340,8 @@ export function NotificationRowCompact({ notification, onPress }: NotificationRo
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`${notification.title}: ${notification.body}`}
       style={[
         styles.compactContainer,
         {

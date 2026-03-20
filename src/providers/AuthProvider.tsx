@@ -42,6 +42,7 @@ import { pushTokenService } from "@/services/pushTokens";
 import { useSecurityStore } from "@/stores/securityStore";
 import { syncServerTime, getServerNow, RESYNC_INTERVAL_MS } from "@/lib/serverTime";
 import { resetHealthService } from "@/services/health";
+import { addBreadcrumb } from "@/lib/sentry";
 import type { Profile } from "@/types/database-helpers";
 
 // =============================================================================
@@ -455,6 +456,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
 
           await loadProfileAndSetState(session);
+          addBreadcrumb("auth_signup_complete", { method: "email" });
           console.log(`[AuthProvider] ✅ signUp() complete`);
         } else {
           // Email confirmation required
@@ -493,6 +495,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
 
         await loadProfileAndSetState(session);
+        addBreadcrumb("auth_signin_complete", { method: "email" });
         console.log(`[AuthProvider] ✅ signIn() complete`);
       } catch (err) {
         setState((prev) => ({ ...prev, loading: false, error: err as Error }));
@@ -514,6 +517,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       useSecurityStore.getState().reset();
 
       await authService.signOut();
+      addBreadcrumb("auth_signout_complete");
       console.log(`[AuthProvider] ✅ signOut() complete`);
       // Listener handles SIGNED_OUT → clears state
     } catch (err) {
@@ -550,7 +554,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (appleDisplayName) {
         try {
           await authService.updateProfile({ display_name: appleDisplayName });
-          console.log(`[AuthProvider] 🍎 Applied Apple display name: "${appleDisplayName}"`);
+          if (__DEV__) console.log(`[AuthProvider] Applied Apple display name: "${appleDisplayName}"`);
           // Refresh profile state to reflect the name change
           const updatedProfile = await authService.getMyProfileWithUserId(session.user.id);
           if (mountedRef.current) {
@@ -562,6 +566,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       }
 
+      addBreadcrumb("auth_signin_complete", { method: "apple" });
       console.log(`[AuthProvider] ✅ signInWithApple() complete`);
     } catch (err: unknown) {
       const errCode = (err as Record<string, unknown>)?.code;
@@ -596,6 +601,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       session = await ensureNewUserOnboarding(session);
       await loadProfileAndSetState(session);
+      addBreadcrumb("auth_signin_complete", { method: "google" });
       console.log(`[AuthProvider] ✅ signInWithGoogle() complete`);
     } catch (err: unknown) {
       const errRecord = err as Record<string, unknown>;

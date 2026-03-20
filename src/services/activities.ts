@@ -10,6 +10,7 @@ import { checkNetworkStatus } from "@/lib/network";
 import { useOfflineStore } from "@/stores/offlineStore";
 import { getServerNow } from "@/lib/serverTime";
 import type { ActivityLog } from "@/types/database-helpers";
+import { addBreadcrumb } from "@/lib/sentry";
 import type { Database } from "@/types/database";
 
 type LogActivityArgs = Database["public"]["Functions"]["log_activity"]["Args"];
@@ -118,6 +119,8 @@ export async function executeLogActivity(payload: {
     }
     throw error;
   }
+
+  addBreadcrumb("activity_logged", { activity_type: payload.activity_type });
 }
 
 /**
@@ -154,6 +157,7 @@ export async function executeLogWorkout(payload: {
     throw error;
   }
 
+  addBreadcrumb("workout_logged", { workout_type: payload.workout_type });
   return typeof data === "number" ? data : 0;
 }
 

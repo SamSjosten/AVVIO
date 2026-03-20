@@ -89,6 +89,7 @@ export default function HomeScreenV2() {
     unreadCount,
     isLoading,
     isRefreshing,
+    isError,
     handleRefresh,
     handleAcceptInvite,
     handleDeclineInvite,
@@ -280,6 +281,25 @@ export default function HomeScreenV2() {
           <View style={{ marginTop: spacing.lg }}>
             <StreakBanner streak={currentStreak} onDismiss={handleStreakDismiss} />
           </View>
+        )}
+
+        {/* ================================================================ */}
+        {/* ERROR BANNER */}
+        {/* ================================================================ */}
+        {isError && (
+          <TouchableOpacity
+            style={[
+              styles.errorBanner,
+              { backgroundColor: colors.error + "15", borderRadius: radius.lg },
+            ]}
+            onPress={handleRefresh}
+            accessibilityLabel="Something went wrong. Tap to retry."
+            accessibilityRole="button"
+          >
+            <Text style={[styles.errorBannerText, { color: colors.error }]}>
+              Something went wrong. Tap to retry.
+            </Text>
+          </TouchableOpacity>
         )}
 
         {/* ================================================================ */}
@@ -549,6 +569,15 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+  },
+  errorBanner: {
+    marginTop: 12,
+    padding: 12,
+    alignItems: "center",
+  },
+  errorBannerText: {
+    fontSize: 14,
+    fontWeight: "500",
   },
   // Header styles
   header: {

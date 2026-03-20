@@ -36,7 +36,7 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#007AFF"
       },
-      "package": "com.yourcompany.fitchallenge",
+      "package": "com.sps.fitchallenge",
       "runtimeVersion": "1.0.0"
     },
     "web": {

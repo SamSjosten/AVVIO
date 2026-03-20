@@ -18,6 +18,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useAppTheme } from "@/providers/ThemeProvider";
 import { usePendingInvites, useRespondToInvite } from "@/hooks/useChallenges";
 import { LoadingState } from "@/components/shared";
+import { formatDateWithWeekday } from "@/lib/formatDate";
 import {
   ChevronLeftIcon,
   CalendarIcon,
@@ -112,14 +113,6 @@ export default function InviteDetailScreen() {
   };
 
   // Format helpers
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString(undefined, {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    });
-  };
 
   const getDuration = (startDate: string, endDate: string) => {
     const start = new Date(startDate);
@@ -287,7 +280,7 @@ export default function InviteDetailScreen() {
                   {getDuration(challenge.start_date, challenge.end_date)}
                 </Text>
                 <Text style={[styles.detailMeta, { color: colors.textMuted }]}>
-                  {formatDate(challenge.start_date)} - {formatDate(challenge.end_date)}
+                  {formatDateWithWeekday(challenge.start_date)} - {formatDateWithWeekday(challenge.end_date)}
                 </Text>
               </View>
             </View>
