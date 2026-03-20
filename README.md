@@ -415,7 +415,7 @@ These features do not exist in the codebase:
 
 - Apple Sign-In (requires Apple Developer account)
 - Push notification delivery (Edge Function not deployed)
-- Health sync (HealthKit/Google Fit integration)
+- Health sync (HealthKit integration, iOS only; Google Fit planned)
 - Data export / account deletion UI
 - Offline queue processing
 
