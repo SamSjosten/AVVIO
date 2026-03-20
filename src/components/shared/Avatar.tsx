@@ -1,8 +1,8 @@
 // src/components/shared/Avatar.tsx
 // Reusable avatar component with initials fallback
 
-import React from "react";
-import { View, Text, StyleProp, ViewStyle } from "react-native";
+import React, { useState } from "react";
+import { View, Text, Image, StyleProp, ViewStyle } from "react-native";
 import { radius } from "@/constants/theme";
 import { useAppTheme } from "@/providers/ThemeProvider";
 
@@ -13,9 +13,10 @@ export interface AvatarProps {
   style?: StyleProp<ViewStyle>;
 }
 
-export function Avatar({ uri, name, size = "md", style }: AvatarProps) {
+function AvatarInner({ uri, name, size = "md", style }: AvatarProps) {
   const { colors, componentSize } = useAppTheme();
   const avatarSize = componentSize.avatar[size];
+  const [imageFailed, setImageFailed] = useState(false);
 
   const getInitials = (name?: string) => {
     if (!name) return "?";
@@ -27,7 +28,29 @@ export function Avatar({ uri, name, size = "md", style }: AvatarProps) {
       .slice(0, 2);
   };
 
-  if (uri) {
+  const initialsView = (
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: colors.primary.subtle,
+      }}
+    >
+      <Text
+        style={{
+          fontSize: avatarSize * 0.4,
+          fontWeight: "600",
+          fontFamily: "PlusJakartaSans_600SemiBold",
+          color: colors.primary.main,
+        }}
+      >
+        {getInitials(name)}
+      </Text>
+    </View>
+  );
+
+  if (uri && !imageFailed) {
     return (
       <View
         style={[
@@ -41,25 +64,11 @@ export function Avatar({ uri, name, size = "md", style }: AvatarProps) {
           style,
         ]}
       >
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: colors.primary.subtle,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: avatarSize * 0.4,
-              fontWeight: "600",
-              fontFamily: "PlusJakartaSans_600SemiBold",
-              color: colors.primary.main,
-            }}
-          >
-            {getInitials(name)}
-          </Text>
-        </View>
+        <Image
+          source={{ uri }}
+          style={{ width: avatarSize, height: avatarSize }}
+          onError={() => setImageFailed(true)}
+        />
       </View>
     );
   }
@@ -78,16 +87,9 @@ export function Avatar({ uri, name, size = "md", style }: AvatarProps) {
         style,
       ]}
     >
-      <Text
-        style={{
-          fontSize: avatarSize * 0.4,
-          fontWeight: "600",
-          fontFamily: "PlusJakartaSans_600SemiBold",
-          color: colors.primary.main,
-        }}
-      >
-        {getInitials(name)}
-      </Text>
+      {initialsView}
     </View>
   );
 }
+
+export const Avatar = React.memo(AvatarInner);

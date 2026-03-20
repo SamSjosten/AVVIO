@@ -17,8 +17,8 @@ export const challengeKeys = {
   pending: () => [...challengeKeys.all, "pending"] as const,
   startingSoon: () => [...challengeKeys.all, "startingSoon"] as const,
   detail: (id: string) => [...challengeKeys.all, "detail", id] as const,
-  leaderboard: (id: string) =>
-    [...challengeKeys.all, "leaderboard", id] as const,
+  leaderboard: (id: string, limit?: number) =>
+    [...challengeKeys.all, "leaderboard", id, limit] as const,
 };
 
 // =============================================================================
@@ -29,8 +29,8 @@ export const activityKeys = {
   all: ["activities"] as const,
   recent: (userId: string, limit?: number) =>
     [...activityKeys.all, "recent", userId, limit] as const,
-  forChallenge: (userId: string, challengeId: string) =>
-    [...activityKeys.all, "challenge", userId, challengeId] as const,
+  forChallenge: (userId: string, challengeId: string, limit?: number) =>
+    [...activityKeys.all, "challenge", userId, challengeId, limit] as const,
   summary: (userId: string, challengeId: string) =>
     [...activityKeys.all, "summary", userId, challengeId] as const,
 };

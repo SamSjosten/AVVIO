@@ -42,3 +42,15 @@ expo-env.d.ts
 android/sentry.properties
 ios/sentry.properties
 
+# Native build output (managed by Expo prebuild)
+ios/
+android/
+
+# Claude Code temp files
+.claude/worktrees/
+.claude/start-expo-web.sh
+
+# Local dev scripts
+dev-ios.sh
+dev-ios-stop.sh
+dev-ios-rebuild.sh

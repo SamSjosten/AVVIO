@@ -3,13 +3,13 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { friendsService } from "@/services/friends";
-import { notificationsKeys } from "@/lib/queryKeys";
+import { friendsKeys, notificationsKeys } from "@/lib/queryKeys";
 
 // =============================================================================
 // QUERY KEYS — re-exported from @/lib/queryKeys for backward compatibility
 // =============================================================================
 
-export { friendsKeys } from "@/lib/queryKeys";
+export { friendsKeys };
 
 // =============================================================================
 // HOOKS

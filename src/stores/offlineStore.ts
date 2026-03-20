@@ -20,15 +20,23 @@ import { getSupabaseClient, requireUserId } from "@/lib/supabase";
  *
  * GUARDRAIL 3: Only idempotent actions are queued.
  * - LOG_ACTIVITY: Idempotent via client_event_id unique constraint
+ * - LOG_WORKOUT: Idempotent via client_event_id unique constraint (workout points path)
  * - ACCEPT_INVITE: Idempotent (update to same value is no-op)
  * - SEND_FRIEND_REQUEST: Idempotent via unique constraint
  */
-export type QueuedActionType = "LOG_ACTIVITY" | "ACCEPT_INVITE" | "SEND_FRIEND_REQUEST";
+export type QueuedActionType = "LOG_ACTIVITY" | "LOG_WORKOUT" | "ACCEPT_INVITE" | "SEND_FRIEND_REQUEST";
 
 export interface LogActivityPayload {
   challenge_id: string;
   activity_type: string;
   value: number;
+  client_event_id: string; // Required for idempotency
+}
+
+export interface LogWorkoutPayload {
+  challenge_id: string;
+  workout_type: string;
+  duration_minutes: number;
   client_event_id: string; // Required for idempotency
 }
 
@@ -42,6 +50,7 @@ export interface SendFriendRequestPayload {
 
 export type QueuedAction =
   | { type: "LOG_ACTIVITY"; payload: LogActivityPayload }
+  | { type: "LOG_WORKOUT"; payload: LogWorkoutPayload }
   | { type: "ACCEPT_INVITE"; payload: AcceptInvitePayload }
   | { type: "SEND_FRIEND_REQUEST"; payload: SendFriendRequestPayload };
 
@@ -163,6 +172,31 @@ async function executeAction(action: QueuedAction): Promise<void> {
         p_challenge_id: challenge_id,
         p_activity_type: activity_type,
         p_value: value,
+        p_source: "manual",
+        p_client_event_id: client_event_id,
+      });
+
+      // Idempotency: duplicate key is success
+      if (error && !error.message?.includes("duplicate") && error.code !== "23505") {
+        throw error;
+      }
+      break;
+    }
+
+    case "LOG_WORKOUT": {
+      const { challenge_id, workout_type, duration_minutes, client_event_id } = action.payload;
+
+      // GUARDRAIL 3: Auth check at execution time
+      await requireUserId();
+
+      const { error } = await (supabase.rpc as Function)("log_workout", {
+        p_challenge_id: challenge_id,
+        p_workout_type: workout_type,
+        p_duration_minutes: duration_minutes,
+        // Server-synced time would be ideal here, but offlineStore intentionally
+        // avoids importing from serverTime to keep dependencies minimal.
+        // The long-term fix is enforcing server time inside log_workout itself.
+        p_recorded_at: new Date().toISOString(),
         p_source: "manual",
         p_client_event_id: client_event_id,
       });

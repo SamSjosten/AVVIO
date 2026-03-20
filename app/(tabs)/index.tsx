@@ -60,6 +60,19 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 
 const STREAK_BANNER_STORAGE_KEY = "fitchallenge_streak_banner_dismissed";
 
+const ACCORDION_ANIMATION = {
+  duration: 200,
+  create: {
+    type: LayoutAnimation.Types.easeInEaseOut,
+    property: LayoutAnimation.Properties.opacity,
+  },
+  update: { type: LayoutAnimation.Types.easeInEaseOut },
+  delete: {
+    type: LayoutAnimation.Types.easeInEaseOut,
+    property: LayoutAnimation.Properties.opacity,
+  },
+};
+
 export default function HomeScreenV2() {
   const { colors, spacing, radius } = useAppTheme();
   const { showToast } = useToast();
@@ -161,18 +174,7 @@ export default function HomeScreenV2() {
   };
 
   const toggleCompleted = () => {
-    LayoutAnimation.configureNext({
-      duration: 200,
-      create: {
-        type: LayoutAnimation.Types.easeInEaseOut,
-        property: LayoutAnimation.Properties.opacity,
-      },
-      update: { type: LayoutAnimation.Types.easeInEaseOut },
-      delete: {
-        type: LayoutAnimation.Types.easeInEaseOut,
-        property: LayoutAnimation.Properties.opacity,
-      },
-    });
+    LayoutAnimation.configureNext(ACCORDION_ANIMATION);
     setCompletedExpanded(!completedExpanded);
   };
 
@@ -203,18 +205,7 @@ export default function HomeScreenV2() {
 
   // Toggle challenge card expansion (accordion - only one at a time)
   const handleToggleCardExpand = useCallback((challengeId: string) => {
-    LayoutAnimation.configureNext({
-      duration: 200,
-      create: {
-        type: LayoutAnimation.Types.easeInEaseOut,
-        property: LayoutAnimation.Properties.opacity,
-      },
-      update: { type: LayoutAnimation.Types.easeInEaseOut },
-      delete: {
-        type: LayoutAnimation.Types.easeInEaseOut,
-        property: LayoutAnimation.Properties.opacity,
-      },
-    });
+    LayoutAnimation.configureNext(ACCORDION_ANIMATION);
     setExpandedCardId((prevId) => (prevId === challengeId ? null : challengeId));
   }, []);
 
@@ -268,6 +259,7 @@ export default function HomeScreenV2() {
             <TouchableOpacity
               style={styles.notificationButton}
               onPress={() => router.push("/notifications")}
+              accessibilityLabel="Notifications"
             >
               <BellIcon size={20} color={colors.textSecondary} />
               {unreadCount !== undefined && unreadCount > 0 && (

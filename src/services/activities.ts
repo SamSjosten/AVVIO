@@ -8,6 +8,7 @@ import { getSupabaseClient, withAuth } from "@/lib/supabase";
 import { validate, logActivitySchema } from "@/lib/validation";
 import { checkNetworkStatus } from "@/hooks/useNetworkStatus";
 import { useOfflineStore } from "@/stores/offlineStore";
+import { getServerNow } from "@/lib/serverTime";
 import type { ActivityLog, Database } from "@/types/database";
 
 type LogActivityArgs = Database["public"]["Functions"]["log_activity"]["Args"];
@@ -171,13 +172,14 @@ export const activityService = {
     const isOnline = await checkNetworkStatus();
 
     if (!isOnline) {
-      // Queue for later — store as LOG_ACTIVITY with workout-derived values
+      // Queue for later — store full workout params so replay uses log_workout RPC
+      // with proper multiplier scoring, workout_type validation, and metadata.
       useOfflineStore.getState().addToQueue({
-        type: "LOG_ACTIVITY",
+        type: "LOG_WORKOUT",
         payload: {
           challenge_id: input.challenge_id,
-          activity_type: "workouts",
-          value: input.duration_minutes, // Rough estimate; server recalculates
+          workout_type: input.workout_type,
+          duration_minutes: input.duration_minutes,
           client_event_id: input.client_event_id,
         },
       });
@@ -192,7 +194,9 @@ export const activityService = {
           p_challenge_id: input.challenge_id,
           p_workout_type: input.workout_type,
           p_duration_minutes: input.duration_minutes,
-          p_recorded_at: new Date().toISOString(),
+          // Use server-synced time when available to mitigate client clock skew.
+          // Long-term ideal: enforce server time inside log_workout itself.
+          p_recorded_at: getServerNow().toISOString(),
           p_source: "manual",
           p_client_event_id: input.client_event_id,
         });
@@ -209,14 +213,14 @@ export const activityService = {
         // log_workout returns integer (calculated points)
         return { queued: false, points: typeof data === "number" ? data : 0 };
       } catch (error) {
-        // Network error during request - queue it
+        // Network error during request - queue it with full workout params
         if (isNetworkError(error)) {
           useOfflineStore.getState().addToQueue({
-            type: "LOG_ACTIVITY",
+            type: "LOG_WORKOUT",
             payload: {
               challenge_id: input.challenge_id,
-              activity_type: "workouts",
-              value: input.duration_minutes,
+              workout_type: input.workout_type,
+              duration_minutes: input.duration_minutes,
               client_event_id: input.client_event_id,
             },
           });

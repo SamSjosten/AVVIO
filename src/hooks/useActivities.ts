@@ -5,13 +5,14 @@
 import { useQuery, useQueryClient, UseQueryResult } from "@tanstack/react-query";
 import { activityService } from "@/services/activities";
 import { useAuth } from "@/providers/AuthProvider";
+import { activityKeys } from "@/lib/queryKeys";
 import type { ActivityLog } from "@/types/database";
 
 // =============================================================================
 // QUERY KEYS — re-exported from @/lib/queryKeys for backward compatibility
 // =============================================================================
 
-export { activityKeys } from "@/lib/queryKeys";
+export { activityKeys };
 
 // =============================================================================
 // HOOKS
@@ -44,7 +45,7 @@ export function useChallengeActivities(
   const userId = session?.user?.id;
 
   return useQuery({
-    queryKey: activityKeys.forChallenge(userId || "", challengeId),
+    queryKey: activityKeys.forChallenge(userId || "", challengeId, limit),
     queryFn: () => activityService.getChallengeActivities(challengeId, limit),
     enabled: !!userId && !!challengeId,
     staleTime: 1000 * 60 * 2, // 2 minutes

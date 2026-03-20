@@ -321,7 +321,7 @@ export default function AuthScreenV2() {
         form.setIsLoading(false);
         if (!result.cancelled && result.error) form.setErrors({ general: result.error });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (isMounted.current) {
         releaseLock("autoBiometric-err");
         form.setIsLoading(false);

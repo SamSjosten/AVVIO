@@ -111,6 +111,23 @@ await activityService.logManual({
 });
 ```
 
+### logWorkout(input)
+
+Log a workout with type-specific scoring. Uses the `log_workout` RPC which validates `workout_type` against `allowed_workout_types`, looks up the multiplier from `workout_type_catalog`, and calculates `points = floor(duration × multiplier)`.
+
+```typescript
+await activityService.logWorkout({
+  challenge_id: "challenge-uuid",
+  workout_type: "yoga",
+  duration_minutes: 30,
+  client_event_id: randomUUID(),
+});
+// Online: calls log_workout RPC with server-synced timestamp
+// Offline: queues as LOG_WORKOUT, replays through log_workout RPC when online
+```
+
+**Important:** Workouts go through a different scoring path than generic activities. The `log_workout` RPC applies workout-type multipliers (e.g., yoga 1.5×, running 2.0×), while `log_activity` treats the value as raw points.
+
 ### getHistory(options)
 
 Get activity history for the current user.
@@ -309,48 +326,73 @@ All services may throw these error types:
 
 ```typescript
 import { ValidationError } from "@/lib/validation";
+import { extractErrorMessage } from "@/lib/extractErrorMessage";
 
 try {
   await challengeService.create(input);
-} catch (error) {
-  if (error instanceof ValidationError) {
+} catch (err: unknown) {
+  if (err instanceof ValidationError) {
     // Input validation failed
-    console.log(error.firstError);
-    console.log(error.getFieldError("title"));
-  } else if (error.code === "PGRST116") {
+    console.log(err.firstError);
+    console.log(err.getFieldError("title"));
+  } else if ((err as Record<string, unknown>)?.code === "PGRST116") {
     // Row not found (404)
-  } else if (error.code === "42501") {
+  } else if ((err as Record<string, unknown>)?.code === "42501") {
     // RLS policy violation (403)
   } else {
     // Other database or network error
-    console.error(error.message);
+    console.error(extractErrorMessage(err));
   }
 }
+```
+
+### extractErrorMessage utility
+
+All catch blocks use `catch (err: unknown)` (never `catch (err: any)`). Use the shared utility for safe message extraction:
+
+```typescript
+import { extractErrorMessage } from "@/lib/extractErrorMessage";
+
+// Returns err.message for Error instances, the string itself for strings,
+// or "An unexpected error occurred" for anything else.
+const message = extractErrorMessage(err);
 ```
 
 ## Offline Support
 
 Services that support offline operations:
 
-| Service                          | Offline Support | Notes                      |
-| -------------------------------- | --------------- | -------------------------- |
-| challengeService.logActivity     | ✅ Queued       | Syncs when online          |
-| friendsService.sendRequest       | ✅ Queued       | Syncs when online          |
-| challengeService.respondToInvite | ✅ Queued       | Syncs when online          |
-| challengeService.create          | ❌ Online only  | Requires server validation |
-| healthService.sync               | ❌ Online only  | Requires API access        |
+| Service                          | Offline Support | Queue Action Type    | Notes                                        |
+| -------------------------------- | --------------- | -------------------- | -------------------------------------------- |
+| activityService.logManual        | ✅ Queued       | `LOG_ACTIVITY`       | Syncs when online via `log_activity` RPC     |
+| activityService.logWorkout       | ✅ Queued       | `LOG_WORKOUT`        | Syncs when online via `log_workout` RPC      |
+| friendsService.sendRequest       | ✅ Queued       | `SEND_FRIEND_REQUEST`| Syncs when online                            |
+| challengeService.respondToInvite | ✅ Queued       | `ACCEPT_INVITE`      | Syncs when online                            |
+| challengeService.create          | ❌ Online only  | —                    | Requires server validation                   |
+| healthService.sync               | ❌ Online only  | —                    | Requires API access                          |
 
-Use the offline store for queued operations:
+All queued actions are idempotent via `client_event_id`. The offline store captures `queuedByUserId` at enqueue time and drops items from a different user at processing time (cross-account guard).
 
 ```typescript
 import { useOfflineStore } from "@/stores/offlineStore";
 
 const { addToQueue, processQueue, queue } = useOfflineStore();
 
-// Queue an action when offline
+// Queue a generic activity when offline
 addToQueue({
   type: "LOG_ACTIVITY",
   payload: { challengeId, value, activityType, clientEventId },
+});
+
+// Queue a workout when offline (preserves scoring path)
+addToQueue({
+  type: "LOG_WORKOUT",
+  payload: {
+    challenge_id: "challenge-uuid",
+    workout_type: "yoga",
+    duration_minutes: 30,
+    client_event_id: randomUUID(),
+  },
 });
 
 // Process queue when back online

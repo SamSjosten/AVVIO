@@ -4,7 +4,7 @@
 // - `viewerRole` required → component gates itself (no external if/else)
 // - Percent display clamped to match bar (fixes B5)
 
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import Animated, {
   useSharedValue,
@@ -96,7 +96,10 @@ export function LeaderboardSection({
     );
   }
 
-  const displayList = showAll ? leaderboard : leaderboard.slice(0, LEADERBOARD_DISPLAY_LIMIT);
+  const displayList = useMemo(
+    () => (showAll ? leaderboard : leaderboard.slice(0, LEADERBOARD_DISPLAY_LIMIT)),
+    [showAll, leaderboard],
+  );
   const remaining = leaderboard.length - LEADERBOARD_DISPLAY_LIMIT;
 
   return (

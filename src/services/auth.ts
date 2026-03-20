@@ -256,9 +256,10 @@ export const authService = {
             (attempt > 1 ? ` (attempt ${attempt})` : ""),
         );
         return data;
-      } catch (err: any) {
+      } catch (err: unknown) {
         const elapsed = Date.now() - startTime;
-        const isTimeout = err?.message?.includes("timed out");
+        const errMsg = err instanceof Error ? err.message : String(err);
+        const isTimeout = errMsg.includes("timed out");
 
         if (isTimeout && attempt < MAX_RETRIES) {
           const delay = getRetryDelayMs(attempt);
@@ -273,7 +274,7 @@ export const authService = {
         console.error(
           `[AuthService] ❌ Profile query failed for ${shortId} after ${elapsed}ms ` +
             `(attempt ${attempt}/${MAX_RETRIES}):`,
-          err?.message || err,
+          errMsg,
         );
         throw err;
       }

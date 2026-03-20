@@ -12,14 +12,14 @@ import {
   LogWorkoutResult,
 } from "@/services/activities";
 import { useAuth } from "@/hooks/useAuth";
-import { activityKeys, notificationsKeys } from "@/lib/queryKeys";
+import { challengeKeys, activityKeys, notificationsKeys } from "@/lib/queryKeys";
 import type { Challenge, ChallengeType } from "@/types/database";
 
 // =============================================================================
 // QUERY KEYS — re-exported from @/lib/queryKeys for backward compatibility
 // =============================================================================
 
-export { challengeKeys } from "@/lib/queryKeys";
+export { challengeKeys };
 
 // =============================================================================
 // OPTIMISTIC UPDATE HELPERS
@@ -126,7 +126,7 @@ export function useLeaderboard(challengeId: string | undefined, options?: UseLea
   const { enabled = true, limit } = options ?? {};
 
   return useQuery({
-    queryKey: [...challengeKeys.leaderboard(challengeId!), { limit }],
+    queryKey: challengeKeys.leaderboard(challengeId!, limit),
     queryFn: async () => {
       const data = await challengeService.getLeaderboard(challengeId!);
       // Apply client-side limit if specified

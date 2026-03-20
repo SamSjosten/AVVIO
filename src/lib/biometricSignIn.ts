@@ -229,11 +229,12 @@ export async function setupBiometricSignIn(
 
     console.log(`${LOG} 🔧 SETUP complete`);
     return { success: true };
-  } catch (error: any) {
-    console.error(`${LOG} ❌ Setup failed:`, error?.message || error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error(`${LOG} ❌ Setup failed:`, errMsg);
     return {
       success: false,
-      error: error.message || "Failed to set up biometric sign-in",
+      error: errMsg || "Failed to set up biometric sign-in",
     };
   }
 }
@@ -252,8 +253,8 @@ export async function disableBiometricSignIn(): Promise<void> {
     console.log(`${LOG} Step 1: Deleting enabled flag (${BIOMETRIC_ENABLED_KEY})...`);
     await SecureStore.deleteItemAsync(BIOMETRIC_ENABLED_KEY);
     console.log(`${LOG} ✅ Enabled flag deleted`);
-  } catch (error: any) {
-    console.error(`${LOG} ❌ Failed to delete enabled flag:`, error?.message || error);
+  } catch (error: unknown) {
+    console.error(`${LOG} ❌ Failed to delete enabled flag:`, error instanceof Error ? error.message : error);
     // Continue anyway - try to delete credentials too
   }
 
@@ -263,11 +264,11 @@ export async function disableBiometricSignIn(): Promise<void> {
     console.log(`${LOG} Step 2: Deleting credentials (${CREDENTIALS_KEY})...`);
     await SecureStore.deleteItemAsync(CREDENTIALS_KEY);
     console.log(`${LOG} ✅ Credentials deleted`);
-  } catch (error: any) {
+  } catch (error: unknown) {
     // This can fail if the item was stored with requireAuthentication
     // and the OS requires auth to delete. That's OK - credentials are orphaned
     // and can't be used since the enabled flag is gone.
-    console.warn(`${LOG} ⚠️ Credential deletion failed (safe to ignore):`, error?.message || error);
+    console.warn(`${LOG} ⚠️ Credential deletion failed (safe to ignore):`, error instanceof Error ? error.message : error);
   }
 
   // Verify deletion worked
@@ -369,11 +370,12 @@ export async function performBiometricSignIn(
       await signIn(credentials.email, credentials.password);
       console.log(`${LOG} ✅ SIGN-IN successful!`);
       return { success: true };
-    } catch (signInError: any) {
-      console.log(`${LOG} ❌ Auth error: ${signInError.message}`);
+    } catch (signInError: unknown) {
+      const signInMsg = signInError instanceof Error ? signInError.message : String(signInError);
+      console.log(`${LOG} ❌ Auth error: ${signInMsg}`);
 
       // If password changed, disable biometric sign-in
-      if (signInError.message?.includes("Invalid login credentials")) {
+      if (signInMsg.includes("Invalid login credentials")) {
         console.log(`${LOG} Password changed, disabling biometric...`);
         await disableBiometricSignIn();
         return {
@@ -383,11 +385,11 @@ export async function performBiometricSignIn(
       }
       return {
         success: false,
-        error: signInError.message || "Sign-in failed",
+        error: signInMsg || "Sign-in failed",
       };
     }
-  } catch (error: any) {
-    const errorMessage = error?.message || String(error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`${LOG} ❌ Sign-in exception:`, errorMessage);
 
     // Handle user cancellation (various forms iOS can report this)

@@ -41,6 +41,7 @@ import {
 import { TestIDs } from "@/constants/testIDs";
 import { MagnifyingGlassIcon, XMarkIcon } from "react-native-heroicons/outline";
 import type { ProfilePublic } from "@/types/database";
+import { extractErrorMessage } from "@/lib/extractErrorMessage";
 
 type TabType = "friends" | "requests";
 
@@ -108,24 +109,24 @@ export default function FriendsScreenV2() {
       await sendRequest.mutateAsync(userId);
       setSentRequests((prev) => new Set(prev).add(userId));
       Alert.alert("Request Sent!", "Friend request has been sent");
-    } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to send request");
+    } catch (err: unknown) {
+      Alert.alert("Error", extractErrorMessage(err));
     }
   };
 
   const handleAccept = async (friendshipId: string) => {
     try {
       await acceptRequest.mutateAsync(friendshipId);
-    } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to accept request");
+    } catch (err: unknown) {
+      Alert.alert("Error", extractErrorMessage(err));
     }
   };
 
   const handleDecline = async (friendshipId: string) => {
     try {
       await declineRequest.mutateAsync(friendshipId);
-    } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to decline request");
+    } catch (err: unknown) {
+      Alert.alert("Error", extractErrorMessage(err));
     }
   };
 

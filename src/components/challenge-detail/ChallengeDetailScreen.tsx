@@ -43,6 +43,7 @@ import { LoadingState, ErrorState } from "@/components/shared";
 import { useAppTheme } from "@/providers/ThemeProvider";
 import { getEffectiveStatus, canLogActivity } from "@/lib/challengeStatus";
 import { getServerNow, syncServerTime, getDaysRemaining } from "@/lib/serverTime";
+import { extractErrorMessage } from "@/lib/extractErrorMessage";
 import { TestIDs } from "@/constants/testIDs";
 import { ChevronLeftIcon, EllipsisVerticalIcon } from "react-native-heroicons/outline";
 
@@ -206,8 +207,8 @@ export function ChallengeDetailScreen({ challengeId }: ChallengeDetailScreenProp
         client_event_id,
       });
       setShowLogSheet(false);
-    } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to log activity");
+    } catch (err: unknown) {
+      Alert.alert("Error", extractErrorMessage(err));
     }
   };
 
@@ -228,8 +229,8 @@ export function ChallengeDetailScreen({ challengeId }: ChallengeDetailScreenProp
           `You earned ${result.points} point${result.points !== 1 ? "s" : ""}!`,
         );
       }
-    } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to log workout");
+    } catch (err: unknown) {
+      Alert.alert("Error", extractErrorMessage(err));
     }
   };
 
@@ -250,8 +251,8 @@ export function ChallengeDetailScreen({ challengeId }: ChallengeDetailScreenProp
         challenge_id: challenge.id,
         response: "accepted",
       });
-    } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to accept invite");
+    } catch (err: unknown) {
+      Alert.alert("Error", extractErrorMessage(err));
     }
   };
 
@@ -269,8 +270,8 @@ export function ChallengeDetailScreen({ challengeId }: ChallengeDetailScreenProp
               response: "declined",
             });
             handleBack();
-          } catch (err: any) {
-            Alert.alert("Error", err.message || "Failed to decline invite");
+          } catch (err: unknown) {
+            Alert.alert("Error", extractErrorMessage(err));
           }
         },
       },
@@ -288,8 +289,8 @@ export function ChallengeDetailScreen({ challengeId }: ChallengeDetailScreenProp
           try {
             await leaveChallenge.mutateAsync(challenge.id);
             handleBack();
-          } catch (err: any) {
-            Alert.alert("Error", err.message || "Failed to leave challenge");
+          } catch (err: unknown) {
+            Alert.alert("Error", extractErrorMessage(err));
           }
         },
       },
@@ -307,8 +308,8 @@ export function ChallengeDetailScreen({ challengeId }: ChallengeDetailScreenProp
           try {
             await cancelChallenge.mutateAsync(challenge.id);
             handleBack();
-          } catch (err: any) {
-            Alert.alert("Error", err.message || "Failed to cancel challenge");
+          } catch (err: unknown) {
+            Alert.alert("Error", extractErrorMessage(err));
           }
         },
       },
@@ -336,8 +337,8 @@ export function ChallengeDetailScreen({ challengeId }: ChallengeDetailScreenProp
               previousParticipantIds: participantIds,
             });
             router.push(`/challenge/${newChallengeId}`);
-          } catch (err: any) {
-            Alert.alert("Error", err.message || "Failed to create rematch");
+          } catch (err: unknown) {
+            Alert.alert("Error", extractErrorMessage(err));
           }
         },
       },

@@ -8,12 +8,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { notificationsService, Notification } from "@/services/notifications";
 import { Config } from "@/constants/config";
+import { notificationsKeys } from "@/lib/queryKeys";
 
 // =============================================================================
 // QUERY KEYS — re-exported from @/lib/queryKeys for backward compatibility
 // =============================================================================
 
-export { notificationsKeys } from "@/lib/queryKeys";
+export { notificationsKeys };
 
 // =============================================================================
 // QUERY HOOKS

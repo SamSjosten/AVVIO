@@ -94,8 +94,8 @@ export default function SecuritySettingsScreen() {
                 } else {
                   console.log("[Security] Successfully disabled");
                 }
-              } catch (error: any) {
-                console.error(`[Security] Exception:`, error?.message || error);
+              } catch (error: unknown) {
+                console.error(`[Security] Exception:`, error instanceof Error ? error.message : error);
                 Alert.alert("Error", "Failed to disable Face ID. Please try again.", [
                   { text: "OK" },
                 ]);

@@ -39,7 +39,7 @@ import { getSupabaseClient } from "@/lib/supabase";
 import { authService, configureGoogleSignIn } from "@/services/auth";
 import { pushTokenService } from "@/services/pushTokens";
 import { useSecurityStore } from "@/stores/securityStore";
-import { syncServerTime, RESYNC_INTERVAL_MS } from "@/lib/serverTime";
+import { syncServerTime, getServerNow, RESYNC_INTERVAL_MS } from "@/lib/serverTime";
 import type { Profile } from "@/types/database";
 
 // =============================================================================
@@ -390,7 +390,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     const createdAt = new Date(session.user.created_at).getTime();
-    const ageMs = Date.now() - createdAt;
+    const ageMs = getServerNow().getTime() - createdAt;
     const isNew = ageMs < 2 * 60 * 1000;
 
     if (!isNew) {
@@ -544,10 +544,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // capture it now — subsequent sign-ins won't include it.
       if (appleDisplayName) {
         try {
-          await getSupabaseClient()
-            .from("profiles")
-            .update({ display_name: appleDisplayName })
-            .eq("id", session.user.id);
+          await authService.updateProfile({ display_name: appleDisplayName });
           console.log(`[AuthProvider] 🍎 Applied Apple display name: "${appleDisplayName}"`);
           // Refresh profile state to reflect the name change
           const updatedProfile = await authService.getMyProfileWithUserId(session.user.id);
@@ -561,13 +558,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       console.log(`[AuthProvider] ✅ signInWithApple() complete`);
-    } catch (err: any) {
-      if (err?.code === "ERR_REQUEST_CANCELED" || err?.code === "ERR_CANCELED") {
+    } catch (err: unknown) {
+      const errCode = (err as Record<string, unknown>)?.code;
+      if (errCode === "ERR_REQUEST_CANCELED" || errCode === "ERR_CANCELED") {
         console.log(`[AuthProvider] 🍎 Apple Sign-In cancelled by user`);
         setState((prev) => ({ ...prev, loading: false }));
         return;
       }
-      setState((prev) => ({ ...prev, loading: false, error: err as Error }));
+      setState((prev) => ({ ...prev, loading: false, error: err instanceof Error ? err : new Error(String(err)) }));
       throw err;
     }
   }, [loadProfileAndSetState, ensureNewUserOnboarding]);
@@ -594,17 +592,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       session = await ensureNewUserOnboarding(session);
       await loadProfileAndSetState(session);
       console.log(`[AuthProvider] ✅ signInWithGoogle() complete`);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errRecord = err as Record<string, unknown>;
+      const errMsg = err instanceof Error ? err.message : String(err);
       const isCancelled =
-        err?.code === "SIGN_IN_CANCELLED" ||
-        err?.code === "12501" ||
-        err?.message?.includes("SIGN_IN_CANCELLED");
+        errRecord?.code === "SIGN_IN_CANCELLED" ||
+        errRecord?.code === "12501" ||
+        errMsg.includes("SIGN_IN_CANCELLED");
       if (isCancelled) {
         console.log(`[AuthProvider] 🔵 Google Sign-In cancelled by user`);
         setState((prev) => ({ ...prev, loading: false }));
         return;
       }
-      setState((prev) => ({ ...prev, loading: false, error: err as Error }));
+      setState((prev) => ({ ...prev, loading: false, error: err instanceof Error ? err : new Error(String(err)) }));
       throw err;
     }
   }, [loadProfileAndSetState, ensureNewUserOnboarding]);

@@ -6,6 +6,7 @@
 // - User hasn't set up biometric sign-in yet
 
 import React, { useState, useEffect } from "react";
+import { extractErrorMessage } from "@/lib/extractErrorMessage";
 import {
   View,
   Text,
@@ -68,9 +69,9 @@ export function BiometricSetupModal({
         setError(result.error || "Setup failed. Please try again.");
         setIsLoading(false);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[BiometricSetupModal] Error:", err);
-      setError(err?.message || "An unexpected error occurred.");
+      setError(extractErrorMessage(err));
       setIsLoading(false);
     }
   };

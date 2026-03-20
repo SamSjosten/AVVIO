@@ -17,6 +17,9 @@ export function formatNumber(num: number): string {
  * Format a date as a short date string (e.g., "Jan 15")
  */
 export function formatShortDate(dateString: string): string {
-  const date = new Date(dateString);
+  // Date-only strings ("YYYY-MM-DD") parse as UTC midnight; adding noon
+  // prevents timezone offsets from shifting the displayed date.
+  const normalized = dateString.length === 10 ? `${dateString}T12:00:00` : dateString;
+  const date = new Date(normalized);
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }

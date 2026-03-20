@@ -184,13 +184,13 @@ export function useAuthForm(config: UseAuthFormConfig, initialMode: AuthMode = "
         success: true,
         credentials: { email: trimmedEmail, password },
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (isMounted.current) {
         setIsLoading(false);
       }
       return {
         success: false,
-        error: error.message || "Authentication failed",
+        error: error instanceof Error ? error.message : "Authentication failed",
       };
     }
   }, [mode, email, password, username, rememberMe, signIn, signUp]);

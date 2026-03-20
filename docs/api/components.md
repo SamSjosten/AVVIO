@@ -1,6 +1,6 @@
 # Component Library
 
-> **Last Updated:** February 2025
+> **Last Updated:** March 2025
 
 This document describes the reusable React Native components in FitChallenge.
 
@@ -17,6 +17,27 @@ Components are organized into:
 ## Shared Components
 
 Located in `src/components/shared/`.
+
+### Avatar
+
+User avatar with remote image support and initials fallback. Wrapped in `React.memo` for render optimization.
+
+```typescript
+import { Avatar } from '@/components/shared/Avatar';
+
+<Avatar
+  uri="https://example.com/photo.jpg"  // Remote image URL (optional)
+  name="John Doe"                       // Used for initials fallback
+  size="sm" | "md" | "lg"              // Default: "md"
+  style={customStyles}                  // Optional ViewStyle override
+/>
+```
+
+**Behavior:**
+- When `uri` is provided: renders an `<Image>` component. Falls back to initials on load error.
+- When `uri` is absent or image fails: renders colored initials (first letter of first + last name).
+- Size variants map to `componentSize.avatar[size]` from the theme provider.
+- Border radius uses `radius.avatar` from theme constants.
 
 ### Button
 

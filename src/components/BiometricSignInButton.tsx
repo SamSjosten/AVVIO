@@ -90,8 +90,8 @@ export function BiometricSignInButton({
         onError(result.error || "Authentication failed");
       }
       // If cancelled, do nothing
-    } catch (error: any) {
-      onError(error.message || "Sign-in failed");
+    } catch (error: unknown) {
+      onError(error instanceof Error ? error.message : "Sign-in failed");
     } finally {
       setIsLoading(false);
     }

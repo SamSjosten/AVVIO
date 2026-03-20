@@ -2,7 +2,7 @@
 // V2 Profile screen with settings access
 // Phase 2B will add: stats cards, achievements
 
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -23,21 +23,24 @@ export default function ProfileScreenV2() {
   const { colors, spacing, radius } = useAppTheme();
   const { profile, signOut } = useAuth();
 
-  const stats = [
-    {
-      icon: FireIcon,
-      label: "Current Streak",
-      value: profile?.current_streak ?? 0,
-      suffix: "days",
-    },
-    { icon: TrophyIcon, label: "Challenges Won", value: 0, suffix: "" },
-    {
-      icon: ChartBarIcon,
-      label: "Total XP",
-      value: profile?.xp_total ?? 0,
-      suffix: "XP",
-    },
-  ];
+  const stats = useMemo(
+    () => [
+      {
+        icon: FireIcon,
+        label: "Current Streak",
+        value: profile?.current_streak ?? 0,
+        suffix: "days",
+      },
+      { icon: TrophyIcon, label: "Challenges Won", value: 0, suffix: "" },
+      {
+        icon: ChartBarIcon,
+        label: "Total XP",
+        value: profile?.xp_total ?? 0,
+        suffix: "XP",
+      },
+    ],
+    [profile?.current_streak, profile?.xp_total],
+  );
 
   const handleSignOut = () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -71,6 +74,7 @@ export default function ProfileScreenV2() {
           <TouchableOpacity
             testID={TestIDs.profile.settingsButton}
             onPress={() => router.push("/settings")}
+            accessibilityLabel="Settings"
           >
             <Cog6ToothIcon size={24} color={colors.textSecondary} />
           </TouchableOpacity>

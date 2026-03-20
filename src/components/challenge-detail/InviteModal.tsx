@@ -7,6 +7,7 @@
 // - Filters out current user from results
 
 import React, { useState, useCallback } from "react";
+import { extractErrorMessage } from "@/lib/extractErrorMessage";
 import {
   View,
   Text,
@@ -64,8 +65,8 @@ export function InviteModal({
         await onInvite(userId);
         // Remove invited user from results
         setSearchResults((prev) => prev.filter((r) => r.id !== userId));
-      } catch (err: any) {
-        Alert.alert("Error", err.message || "Failed to invite user");
+      } catch (err: unknown) {
+        Alert.alert("Error", extractErrorMessage(err));
       } finally {
         setInvitingUserId(null);
       }
