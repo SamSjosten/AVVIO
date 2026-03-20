@@ -1,7 +1,7 @@
 // src/components/create-challenge/types.ts
 // Shared types for Challenge Create multi-step flow
 
-import type { ChallengeType } from "@/types/database";
+import type { ChallengeType } from "@/types/database-helpers";
 import type { FriendWithProfile } from "@/services/friends";
 
 // =============================================================================

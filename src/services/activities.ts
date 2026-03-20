@@ -5,11 +5,12 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseClient, withAuth } from "@/lib/supabase";
-import { validate, logActivitySchema, logWorkoutSchema } from "@/lib/validation";
+import { validate, logActivitySchema, logWorkoutSchema, uuidSchema, challengeIdSchema } from "@/lib/validation";
 import { checkNetworkStatus } from "@/hooks/useNetworkStatus";
 import { useOfflineStore } from "@/stores/offlineStore";
 import { getServerNow } from "@/lib/serverTime";
-import type { ActivityLog, Database } from "@/types/database";
+import type { ActivityLog } from "@/types/database-helpers";
+import type { Database } from "@/types/database";
 
 type LogActivityArgs = Database["public"]["Functions"]["log_activity"]["Args"];
 
@@ -133,7 +134,7 @@ export async function executeLogWorkout(payload: {
   client_event_id: string;
   recorded_at: string;
 }): Promise<number> {
-  const { data, error } = await (getSupabaseClient().rpc as Function)("log_workout", {
+  const { data, error } = await getSupabaseClient().rpc("log_workout", {
     p_challenge_id: payload.challenge_id,
     p_workout_type: payload.workout_type,
     p_duration_minutes: payload.duration_minutes,
@@ -290,10 +291,31 @@ export const activityService = {
   },
 
   /**
+   * Get a single activity by ID
+   * CONTRACT: Only self-activities visible via RLS
+   */
+  async getActivityById(activityId: string): Promise<ActivityLog | null> {
+    uuidSchema.parse(activityId);
+
+    return withAuth(async (userId) => {
+      const { data, error } = await getSupabaseClient()
+        .from("activity_logs")
+        .select("*")
+        .eq("id", activityId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    });
+  },
+
+  /**
    * Get activity history for a challenge
    * CONTRACT: Only self-activities visible via RLS
    */
   async getChallengeActivities(challengeId: string, limit = 50): Promise<ActivityLog[]> {
+    challengeIdSchema.parse(challengeId);
     return withAuth(async (userId) => {
       const { data, error } = await getSupabaseClient()
         .from("activity_logs")
@@ -314,6 +336,7 @@ export const activityService = {
    * CONTRACT: RLS enforced in function - only returns current user's data
    */
   async getChallengeActivitySummary(challengeId: string): Promise<ActivitySummary> {
+    challengeIdSchema.parse(challengeId);
     return withAuth(async () => {
       const { data, error } = await getSupabaseClient().rpc("get_activity_summary", {
         p_challenge_id: challengeId,

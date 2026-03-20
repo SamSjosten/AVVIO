@@ -28,7 +28,7 @@ const challengeRpcRowSchema = z.object({
   creator_id: z.string().uuid().nullable(),
   title: z.string(),
   description: z.string().nullable(),
-  challenge_type: z.enum(["steps", "active_minutes", "workouts", "distance", "custom"]),
+  challenge_type: z.enum(["steps", "active_minutes", "workouts", "distance", "custom", "calories"]),
   goal_value: z.number(),
   goal_unit: z.string(),
   win_condition: z.enum(["highest_total", "first_to_goal", "longest_streak", "all_complete"]),
@@ -37,13 +37,16 @@ const challengeRpcRowSchema = z.object({
   end_date: z.string(),
   starting_soon_notified_at: z.string().nullable().optional(),
   ending_soon_notified_at: z.string().nullable().optional(),
+  completed_notified_at: z.string().nullable(),
+  final_push_notified_at: z.string().nullable(),
   status: z.enum(["draft", "pending", "active", "completed", "archived", "cancelled"]),
   xp_reward: z.number().nullable(),
   max_participants: z.number().nullable(),
   is_public: z.boolean().nullable(),
   custom_activity_name: z.string().nullable(),
-  allowed_workout_types: z.array(z.string()).nullable().optional(),
-  is_solo: z.boolean().default(false),
+  allowed_workout_types: z.array(z.string()).nullable(),
+  is_solo: z.boolean(),
+  workout_activity_filter: z.array(z.string()).nullable(),
   created_at: z.string(),
   updated_at: z.string(),
   // Participation fields (from RPC)
@@ -97,8 +100,6 @@ export interface ChallengeWithParticipation extends Challenge {
   my_rank?: number; // User's rank (1-indexed)
   is_creator?: boolean; // Whether current user created this challenge
   creator_name?: string; // Creator's display name (for "Invited by X" UI)
-  allowed_workout_types?: string[] | null; // Workout type filter (null = all)
-  is_solo?: boolean; // Solo challenge flag (default false)
 }
 
 export interface LeaderboardEntry {
@@ -481,17 +482,17 @@ export const challengeService = {
 
   /**
    * Cancel a challenge (creator only)
-   * CONTRACT: Only creator can cancel (RLS enforced)
-   * Sets status to 'cancelled' which removes from all users' views
+   * CONTRACT: Uses atomic cancel_challenge RPC with server-side validation
+   * CONTRACT: Only creator can cancel; rejects completed/cancelled/archived
    * Defense-in-depth: Requires auth before attempting mutation
    */
   async cancelChallenge(challengeId: string): Promise<void> {
     challengeIdSchema.parse(challengeId);
     return withAuth(async () => {
-      const { error } = await getSupabaseClient()
-        .from("challenges")
-        .update({ status: "cancelled" })
-        .eq("id", challengeId);
+      // cancel_challenge RPC added in migration 040 — cast until types are regenerated
+      const { error } = await (getSupabaseClient().rpc as Function)("cancel_challenge", {
+        p_challenge_id: challengeId,
+      });
 
       if (error) throw error;
     });

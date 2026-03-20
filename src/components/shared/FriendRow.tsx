@@ -7,7 +7,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useAppTheme } from "@/providers/ThemeProvider";
 import { Avatar } from "@/components/shared";
 import { FireIcon, UserPlusIcon, CheckIcon, XMarkIcon } from "react-native-heroicons/outline";
-import type { ProfilePublic } from "@/types/database";
+import type { ProfilePublic } from "@/types/database-helpers";
 
 // Friend row for accepted friends
 export interface FriendRowProps {

@@ -13,7 +13,7 @@ import {
   createServiceClient,
   type TestUser,
 } from "./setup";
-import type { ActivityLog } from "@/types/database";
+import type { ActivityLog } from "@/types/database-helpers";
 
 // Mock React Native modules and Supabase singleton
 // The tests use injected clients from setup.ts, not the app's singleton

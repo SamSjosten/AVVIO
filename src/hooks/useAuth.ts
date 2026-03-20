@@ -7,4 +7,4 @@
 export { useAuth } from "@/providers/AuthProvider";
 
 // Re-export types for consumers that may need them
-export type { Profile } from "@/types/database";
+export type { Profile } from "@/types/database-helpers";

@@ -2,7 +2,7 @@
 // Centralized test data factories for component tests
 // Ensures consistent mock data structures across all test files
 
-import type { ChallengeType } from "@/types/database";
+import type { ChallengeType } from "@/types/database-helpers";
 
 // =============================================================================
 // TYPE DEFINITIONS

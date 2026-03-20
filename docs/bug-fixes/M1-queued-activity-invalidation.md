@@ -158,6 +158,14 @@ Rather than inlining invalidation logic in each caller (which drifts over time),
 
 Query key factories moved from individual hook files to a neutral module. This prevents hook-to-hook import coupling (e.g., `useNetworkStatus` importing from `useChallenges`). Each hook re-exports its keys for backward compatibility.
 
+**Keys added during architecture audit:**
+- `challengeKeys.completed()` — used by `useCompletedChallenges()`
+- `activityKeys.detail(id)` — used by `app/activity/[id].tsx`
+- `challengeKeys.active()` — now invalidated in `onSettled` of `useLogActivity()` and `useLogWorkout()`
+
+**Keys removed:**
+- `challengeKeys.startingSoon()` — `getStartingSoonChallenges()` was deprecated and removed
+
 ### New module: `src/lib/invalidateAfterSync.ts`
 
 ```typescript

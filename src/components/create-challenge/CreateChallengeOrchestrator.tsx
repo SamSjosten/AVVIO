@@ -24,7 +24,7 @@ import { useCreateChallenge, useInviteUser } from "@/hooks/useChallenges";
 import { useFriends } from "@/hooks/useFriends";
 import { getServerNow } from "@/lib/serverTime";
 import { pushTokenService } from "@/services/pushTokens";
-import type { ChallengeType } from "@/types/database";
+import type { ChallengeType } from "@/types/database-helpers";
 
 import { StepProgress } from "./StepProgress";
 import { StepMode } from "./StepMode";

@@ -13,7 +13,7 @@ import {
 } from "@/components/icons/ActivityIcons";
 import { CHALLENGE_TYPES, type StepTypeProps } from "./types";
 import { TestIDs } from "@/constants/testIDs";
-import type { ChallengeType } from "@/types/database";
+import type { ChallengeType } from "@/types/database-helpers";
 
 export function StepType({ mode, onSelect, onBack }: StepTypeProps) {
   const { colors, radius } = useAppTheme();

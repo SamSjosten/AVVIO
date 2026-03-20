@@ -3,6 +3,7 @@
 // Health Service - Main Orchestrator
 // =============================================================================
 
+import { z } from "zod";
 import { Platform } from "react-native";
 import { getSupabaseClient, getUserId, requireUserId } from "@/lib/supabase";
 import type {
@@ -22,6 +23,12 @@ import type {
 } from "./types";
 import { HealthKitProvider, MockHealthProvider } from "./providers";
 import { transformSamples, assignChallengesToActivities, calculateSyncDateRange } from "./utils";
+import {
+  healthConnectionSchema,
+  healthSyncLogSchema,
+  logHealthActivityResultSchema,
+  recentHealthActivitySchema,
+} from "./schemas";
 
 const DEFAULT_SYNC_OPTIONS: Required<SyncOptions> = {
   syncType: "manual",
@@ -75,6 +82,8 @@ export class HealthService implements IHealthService {
       return { status: "disconnected", connection: null, lastSync: null };
     }
 
+    const parsed = healthConnectionSchema.parse(connection);
+
     const { data: activeSyncs } = await getSupabaseClient()
       .from("health_sync_logs")
       .select("id")
@@ -86,15 +95,15 @@ export class HealthService implements IHealthService {
     if (activeSyncs && activeSyncs.length > 0) {
       return {
         status: "syncing",
-        connection: connection as HealthConnection,
-        lastSync: connection.last_sync_at ? new Date(connection.last_sync_at) : null,
+        connection: parsed,
+        lastSync: parsed.last_sync_at ? new Date(parsed.last_sync_at) : null,
       };
     }
 
     return {
-      status: connection.is_active ? "connected" : "disconnected",
-      connection: connection as HealthConnection,
-      lastSync: connection.last_sync_at ? new Date(connection.last_sync_at) : null,
+      status: parsed.is_active ? "connected" : "disconnected",
+      connection: parsed,
+      lastSync: parsed.last_sync_at ? new Date(parsed.last_sync_at) : null,
     };
   }
 
@@ -138,6 +147,8 @@ export class HealthService implements IHealthService {
       throw new Error("Failed to fetch health connection after connect");
     }
 
+    const parsedConnection = healthConnectionSchema.parse(connection);
+
     try {
       await this.sync({
         syncType: "initial",
@@ -147,7 +158,7 @@ export class HealthService implements IHealthService {
       console.warn("Initial sync failed:", syncError);
     }
 
-    return connection as HealthConnection;
+    return parsedConnection;
   }
 
   async disconnect(): Promise<void> {
@@ -199,14 +210,14 @@ export class HealthService implements IHealthService {
       const samples = await this.provider.fetchSamples(startDate, endDate, opts.activityTypes);
 
       if (samples.length === 0) {
-        await this.completeSyncLog(syncLogId, "completed", 0, 0, 0);
+        const logResult = await this.completeSyncLog(syncLogId, "completed", 0, 0, 0);
         return {
-          success: true,
+          success: !logResult.error,
           syncLogId,
           recordsProcessed: 0,
           recordsInserted: 0,
           recordsDeduplicated: 0,
-          errors: [],
+          errors: logResult.error ? [`Sync log update failed: ${logResult.error}`] : [],
           duration: Date.now() - startTime,
         };
       }
@@ -222,7 +233,7 @@ export class HealthService implements IHealthService {
 
       const result = await this.batchInsertActivities(assignedActivities);
 
-      await this.completeSyncLog(
+      const logResult = await this.completeSyncLog(
         syncLogId,
         result.errors.length > 0 ? "partial" : "completed",
         result.total_processed,
@@ -231,16 +242,24 @@ export class HealthService implements IHealthService {
         result.errors.length > 0 ? result.errors.map((e) => e.error).join("; ") : undefined,
       );
 
+      const allErrors = [
+        ...result.errors.map((e) => e.error),
+        ...(logResult.error ? [`Sync log update failed: ${logResult.error}`] : []),
+      ];
+
       return {
-        success: result.errors.length === 0,
+        success: allErrors.length === 0,
         syncLogId,
         recordsProcessed: result.total_processed,
         recordsInserted: result.inserted,
         recordsDeduplicated: result.deduplicated,
-        errors: result.errors.map((e) => e.error),
+        errors: allErrors,
         duration: Date.now() - startTime,
       };
     } catch (error) {
+      // Fire-and-forget: if both the sync AND the log write fail,
+      // the sync error is the one that matters. completeSyncLog no longer
+      // throws, so no risk of masking the original error.
       await this.completeSyncLog(
         syncLogId,
         "failed",
@@ -275,7 +294,7 @@ export class HealthService implements IHealthService {
         continue;
       }
 
-      const result = data as unknown as LogHealthActivityResult;
+      const result = logHealthActivityResultSchema.parse(data);
       totalInserted += result.inserted;
       totalDeduplicated += result.deduplicated;
       allErrors.push(...result.errors);
@@ -296,8 +315,8 @@ export class HealthService implements IHealthService {
     recordsInserted: number,
     recordsDeduplicated: number,
     errorMessage?: string,
-  ): Promise<void> {
-    await getSupabaseClient().rpc("complete_health_sync", {
+  ): Promise<{ error?: string }> {
+    const { error } = await getSupabaseClient().rpc("complete_health_sync", {
       p_log_id: syncLogId,
       p_status: status,
       p_records_processed: recordsProcessed,
@@ -305,6 +324,12 @@ export class HealthService implements IHealthService {
       p_records_deduplicated: recordsDeduplicated,
       p_error_message: errorMessage,
     });
+
+    if (error) {
+      console.error("Failed to complete sync log:", error);
+      return { error: error.message };
+    }
+    return {};
   }
 
   async getSyncHistory(limit = 10): Promise<HealthSyncLog[]> {
@@ -326,7 +351,7 @@ export class HealthService implements IHealthService {
       return [];
     }
 
-    return data as HealthSyncLog[];
+    return z.array(healthSyncLogSchema).parse(data);
   }
 
   async getRecentActivities(limit = 50, offset = 0): Promise<RecentHealthActivity[]> {
@@ -342,7 +367,7 @@ export class HealthService implements IHealthService {
       return [];
     }
 
-    return data as RecentHealthActivity[];
+    return z.array(recentHealthActivitySchema).parse(data);
   }
 
   /**

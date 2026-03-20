@@ -16,6 +16,17 @@
    - **Integration tests:** 15 tests in `offline-queue.integration.test.ts` — all hitting real Supabase test DB
    - All passing.
 
+### v3 update: Internal execution helpers (Architecture Audit)
+
+Offline replay now delegates to `executeLogActivity()` and `executeLogWorkout()` from
+`src/services/activities.ts` instead of calling `getSupabaseClient().rpc()` directly.
+This avoids recursive re-queueing (the public `logActivity()`/`logWorkout()` methods
+do network checks and enqueue on failure — calling them from replay would loop).
+
+**Timestamp policy (split by RPC contract):**
+- `log_activity`: `recorded_at` intentionally omitted — server stays authoritative for manual logs
+- `log_workout`: `recorded_at` captured at enqueue time and replayed to preserve original event time
+
 ---
 
 ## 1. Problem Statement

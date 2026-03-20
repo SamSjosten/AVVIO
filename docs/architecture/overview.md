@@ -91,8 +91,37 @@ Screen → useMutation Hook → Service → Validation → Supabase RPC → RLS 
 ### Offline Flow
 
 ```
-Screen → Service → Offline Queue (Zustand) → [Later] → Supabase
+Screen → Service → Network Check → Offline Queue (Zustand)
+                                         │
+                                    [Later, online]
+                                         │
+                                    requireUserId()
+                                         │
+                                    Internal Executors
+                                    (executeLogActivity / executeLogWorkout)
+                                         │
+                                    Supabase RPC
 ```
+
+Internal execution helpers are used for replay to avoid recursive re-queueing.
+`logActivity` omits `recorded_at` (server-authoritative); `logWorkout` preserves
+the `recorded_at` captured at enqueue time.
+
+### Auth Recovery Flow
+
+```
+QueryCache/MutationCache onError → isExpiredSessionError() → handleExpiredSession()
+                                                                   │
+                                                            queryClient.clear()
+                                                            securityStore.reset()
+                                                            authService.signOut()
+                                                                   │
+                                                            AuthProvider SIGNED_OUT
+                                                                   │
+                                                            Protected route → sign-in
+```
+
+`handleExpiredSession()` is idempotent — concurrent calls are coalesced.
 
 ## Security Model
 

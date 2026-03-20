@@ -2,7 +2,7 @@
 
 **Bug ID:** C1
 **Severity:** CRITICAL
-**Status:** Proposed Fix
+**Status:** IMPLEMENTED
 **Date:** 2026-03-06
 **Cross-ref:** Bug Review Plan — `eager-puzzling-frog.md`
 
@@ -76,7 +76,12 @@ This method correctly resets all fields including the persisted ones. It simply 
 
 ---
 
-## 3. Proposed Fix
+## 3. Fix (Implemented)
+
+> **Implementation note:** In addition to the manual sign-out path below,
+> `useSecurityStore.getState().reset()` is also called in
+> `src/lib/authRecovery.ts:handleExpiredSession()` so that forced session
+> recovery (expired JWT, missing session) also clears biometric preferences.
 
 ### 3a. Code change — `src/providers/AuthProvider.tsx`
 

@@ -216,7 +216,7 @@ export function useLeaderboardSubscription(challengeId: string | undefined) {
         },
         () => {
           if (!cancelled) {
-            throttledInvalidate(challengeKeys.leaderboard(challengeId));
+            throttledInvalidate(challengeKeys.leaderboardPrefix(challengeId));
           }
         },
       )
@@ -231,7 +231,7 @@ export function useLeaderboardSubscription(challengeId: string | undefined) {
         },
         () => {
           if (!cancelled) {
-            throttledInvalidate(challengeKeys.leaderboard(challengeId));
+            throttledInvalidate(challengeKeys.leaderboardPrefix(challengeId));
           }
         },
       )

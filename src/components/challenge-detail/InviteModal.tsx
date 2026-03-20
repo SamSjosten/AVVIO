@@ -23,7 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { authService } from "@/services/auth";
 import { Avatar } from "@/components/shared";
 import { TestIDs } from "@/constants/testIDs";
-import type { ProfilePublic } from "@/types/database";
+import type { ProfilePublic } from "@/types/database-helpers";
 import type { InviteModalProps } from "./types";
 
 export function InviteModal({

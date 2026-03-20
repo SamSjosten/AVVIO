@@ -22,7 +22,7 @@ function mapNotification(db: DbNotification): Notification {
   return {
     ...rest,
     created_at: db.created_at,
-    dismissed_at: (db as DbNotification & { dismissed_at?: string | null }).dismissed_at ?? null,
+    dismissed_at: db.dismissed_at ?? null,
     data:
       data !== null && typeof data === "object" && !Array.isArray(data)
         ? (data as Record<string, unknown>)

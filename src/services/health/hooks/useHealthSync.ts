@@ -7,6 +7,7 @@ import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getHealthService } from "../healthService";
 import { healthQueryKeys } from "./useHealthConnection";
+import { activityKeys } from "@/lib/queryKeys";
 import type { SyncOptions, SyncResult, HealthSyncLog } from "../types";
 
 export interface UseHealthSyncResult {
@@ -36,6 +37,8 @@ export function useHealthSync(): UseHealthSyncResult {
         queryKey: healthQueryKeys.recentActivities(),
       });
       queryClient.invalidateQueries({ queryKey: ["challenges"] });
+      // Health sync writes to activity_logs — invalidate activity caches too
+      queryClient.invalidateQueries({ queryKey: activityKeys.all });
     },
   });
 

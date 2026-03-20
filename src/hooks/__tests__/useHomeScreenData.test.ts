@@ -52,6 +52,11 @@ function makeChallenge(
     updated_at: "2025-01-01T00:00:00Z",
     starting_soon_notified_at: null,
     ending_soon_notified_at: null,
+    completed_notified_at: null,
+    final_push_notified_at: null,
+    allowed_workout_types: null,
+    is_solo: false,
+    workout_activity_filter: null,
     my_participation: {
       invite_status: "accepted",
       current_progress: 0,

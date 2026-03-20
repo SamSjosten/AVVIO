@@ -11,6 +11,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Health service unit tests
 - Documentation scaffolding for architecture, API, and guides
+- `authRecovery.ts` — centralized, idempotent expired-session handler (clears QueryClient, resets security store, delegates to `authService.signOut()`)
+- `authService.getDebugInfo()` and `authService.resetOnboardingForCurrentUser()` — developer screen flows extracted to service layer
+- `healthService.getSummary()` — date-window aggregation moved from hook to service
+- Query key factory: `challengeKeys.completed()`, `activityKeys.detail(id)`
+- `executeLogActivity()` and `executeLogWorkout()` internal helpers for offline replay
+- Zod validation at service boundaries: `getPublicProfile()`, `getChallenge()`, `leaveChallenge()`, `getLeaderboard()`, `cancelChallenge()`, `markAsRead()`, `archiveNotification()`, `restoreNotification()`, `searchUsers()`
+- Error states on Friends and Challenges tabs, activity detail screen
+
+### Changed
+
+- `log_workout()` RPC uses time-derived checks (`start_date`/`end_date`) instead of stored `status` column (migration 039)
+- Offline replay routes through internal execution helpers instead of raw RPC calls, preventing recursive re-queueing
+- `logWorkout()` captures `recorded_at` at enqueue time; `logActivity()` intentionally omits it (server-authoritative)
+- `challengeService.create()` now wrapped in `withAuth()`
+- Health service public methods (`connect`, `disconnect`, `sync`, `getRecentActivities`) require `requireUserId()` preflight
+- Health hooks (`useHealthData`, `useHealthSummary`) gated on `enabled: !!user?.id`
+- `challengeKeys.active()` invalidated after activity/workout logging
+- Developer screen uses service methods instead of direct Supabase calls
+
+### Removed
+
+- `getStartingSoonChallenges()` and `useStartingSoonChallenges()` (deprecated, replaced by time-derived status in `get_my_challenges`)
+- `challengeKeys.startingSoon()` from query key factory
+
+### Security
+
+- `useSecurityStore.getState().reset()` added to auth recovery path (matches manual sign-out cleanup)
+- UUID validation on all user-controlled ID parameters at service boundaries
+- Health hooks no longer fire queries when user is not authenticated
 
 ---
 

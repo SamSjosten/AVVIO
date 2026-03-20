@@ -13,7 +13,7 @@ import {
 } from "@/services/activities";
 import { useAuth } from "@/hooks/useAuth";
 import { challengeKeys, activityKeys, notificationsKeys } from "@/lib/queryKeys";
-import type { Challenge, ChallengeType } from "@/types/database";
+import type { Challenge, ChallengeType } from "@/types/database-helpers";
 
 // =============================================================================
 // QUERY KEYS — re-exported from @/lib/queryKeys for backward compatibility
@@ -148,6 +148,9 @@ export function useCreateChallenge() {
       // Invalidate and refetch active challenges
       queryClient.invalidateQueries({ queryKey: challengeKeys.active() });
     },
+    onError: (error: Error) => {
+      console.error("[useCreateChallenge] Failed:", error.message);
+    },
   });
 }
 
@@ -165,6 +168,9 @@ export function useInviteUser() {
       queryClient.invalidateQueries({
         queryKey: challengeKeys.detail(variables.challenge_id),
       });
+    },
+    onError: (error: Error) => {
+      console.error("[useInviteUser] Failed:", error.message);
     },
   });
 }
@@ -296,7 +302,7 @@ export function useLogActivity() {
 
       // Invalidate to get server-authoritative data
       queryClient.invalidateQueries({
-        queryKey: challengeKeys.leaderboard(variables.challenge_id),
+        queryKey: challengeKeys.leaderboardPrefix(variables.challenge_id),
       });
       queryClient.invalidateQueries({
         queryKey: challengeKeys.detail(variables.challenge_id),
@@ -377,7 +383,7 @@ export function useLogWorkout() {
       }
 
       queryClient.invalidateQueries({
-        queryKey: challengeKeys.leaderboard(variables.challenge_id),
+        queryKey: challengeKeys.leaderboardPrefix(variables.challenge_id),
       });
       queryClient.invalidateQueries({
         queryKey: challengeKeys.detail(variables.challenge_id),
@@ -401,10 +407,14 @@ export function useLeaveChallenge() {
 
   return useMutation({
     mutationFn: (challengeId: string) => challengeService.leaveChallenge(challengeId),
-    onSuccess: () => {
+    onSuccess: (_data, challengeId) => {
       queryClient.invalidateQueries({ queryKey: challengeKeys.active() });
+      queryClient.invalidateQueries({ queryKey: challengeKeys.detail(challengeId) });
       // Trigger refetch notifications since the DB trigger marked challenge notifications as read
       queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
+    },
+    onError: (error: Error) => {
+      console.error("[useLeaveChallenge] Failed:", error.message);
     },
   });
 }
@@ -417,10 +427,14 @@ export function useCancelChallenge() {
 
   return useMutation({
     mutationFn: (challengeId: string) => challengeService.cancelChallenge(challengeId),
-    onSuccess: () => {
+    onSuccess: (_data, challengeId) => {
       queryClient.invalidateQueries({ queryKey: challengeKeys.active() });
+      queryClient.invalidateQueries({ queryKey: challengeKeys.detail(challengeId) });
       // Trigger refetch notifications since the DB trigger marked challenge notifications as read
       queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
+    },
+    onError: (error: Error) => {
+      console.error("[useCancelChallenge] Failed:", error.message);
     },
   });
 }
@@ -439,6 +453,9 @@ export function useRematchChallenge() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: challengeKeys.active() });
       queryClient.invalidateQueries({ queryKey: challengeKeys.pending() });
+    },
+    onError: (error: Error) => {
+      console.error("[useRematchChallenge] Failed:", error.message);
     },
   });
 }

@@ -6,7 +6,7 @@ import { useQuery, useQueryClient, UseQueryResult } from "@tanstack/react-query"
 import { activityService } from "@/services/activities";
 import { useAuth } from "@/providers/AuthProvider";
 import { activityKeys } from "@/lib/queryKeys";
-import type { ActivityLog } from "@/types/database";
+import type { ActivityLog } from "@/types/database-helpers";
 
 // =============================================================================
 // QUERY KEYS — re-exported from @/lib/queryKeys for backward compatibility
@@ -17,6 +17,20 @@ export { activityKeys };
 // =============================================================================
 // HOOKS
 // =============================================================================
+
+/**
+ * Fetch a single activity by ID
+ * Used by activity detail screen for deep links and direct navigation
+ */
+export function useActivityDetail(activityId: string | undefined): UseQueryResult<ActivityLog | null, Error> {
+  const { session } = useAuth();
+
+  return useQuery({
+    queryKey: activityKeys.detail(activityId!),
+    queryFn: () => activityService.getActivityById(activityId!),
+    enabled: !!session?.user?.id && !!activityId,
+  });
+}
 
 /**
  * Fetch recent activities for current user

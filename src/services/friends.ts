@@ -9,7 +9,7 @@ import {
   declineFriendRequestSchema,
   removeFriendSchema,
 } from "@/lib/validation";
-import type { ProfilePublic, Friend as DbFriend } from "@/types/database";
+import type { ProfilePublic, Friend as DbFriend } from "@/types/database-helpers";
 
 // =============================================================================
 // TYPES
@@ -177,6 +177,16 @@ export const friendsService = {
           throw new Error("Friend request already exists");
         }
         throw error;
+      }
+
+      // Trigger notification (server-side function) — non-blocking
+      const { error: notifyError } = await getSupabaseClient().rpc(
+        "enqueue_friend_request_notification",
+        { p_recipient_user_id: target_user_id },
+      );
+
+      if (notifyError) {
+        console.error("Failed to send friend request notification:", notifyError);
       }
     });
   },

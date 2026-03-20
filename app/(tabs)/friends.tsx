@@ -40,7 +40,7 @@ import {
 } from "@/components/shared";
 import { TestIDs } from "@/constants/testIDs";
 import { MagnifyingGlassIcon, XMarkIcon } from "react-native-heroicons/outline";
-import type { ProfilePublic } from "@/types/database";
+import type { ProfilePublic } from "@/types/database-helpers";
 import { extractErrorMessage } from "@/lib/extractErrorMessage";
 
 type TabType = "friends" | "requests";

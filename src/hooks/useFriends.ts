@@ -47,6 +47,9 @@ export function useSendFriendRequest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: friendsKeys.all });
     },
+    onError: (error: Error) => {
+      console.error("[useSendFriendRequest] Failed:", error.message);
+    },
   });
 }
 
@@ -65,6 +68,9 @@ export function useAcceptFriendRequest() {
       // Trigger refetch notifications since the DB trigger marked friend_request_received as read
       queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
     },
+    onError: (error: Error) => {
+      console.error("[useAcceptFriendRequest] Failed:", error.message);
+    },
   });
 }
 
@@ -82,6 +88,9 @@ export function useDeclineFriendRequest() {
       // Trigger refetch notifications since the DB trigger marked friend_request_received as read
       queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
     },
+    onError: (error: Error) => {
+      console.error("[useDeclineFriendRequest] Failed:", error.message);
+    },
   });
 }
 
@@ -98,6 +107,9 @@ export function useRemoveFriend() {
       queryClient.invalidateQueries({ queryKey: friendsKeys.list() });
       // Trigger refetch notifications (in case the friendship was pending)
       queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
+    },
+    onError: (error: Error) => {
+      console.error("[useRemoveFriend] Failed:", error.message);
     },
   });
 }

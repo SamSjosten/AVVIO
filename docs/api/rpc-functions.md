@@ -1,6 +1,6 @@
 # Database RPC Functions
 
-> **Last Updated:** February 2025
+> **Last Updated:** March 2025
 
 This document describes the PostgreSQL RPC functions available via Supabase.
 
@@ -127,7 +127,7 @@ get_challenge_data(
 
 ### get_challenge_effective_status
 
-Computes challenge status based on time boundaries.
+Computes challenge status from time boundaries (not the stored `status` column).
 
 **Source:** Migration 009
 
@@ -139,6 +139,16 @@ get_challenge_effective_status(
 ```
 
 **Returns:** `'pending'` | `'active'` | `'completed'` | `'cancelled'` | `'archived'`
+
+**Time-derived logic:**
+- `start_date > now()` → `'pending'`
+- `start_date <= now() AND end_date > now()` → `'active'`
+- `end_date <= now()` → `'completed'`
+- Stored `status` only consulted for `'cancelled'` / `'archived'` (explicit admin actions)
+
+> **Note:** As of migration 039, `log_workout()` also uses time-derived checks
+> instead of the stored `status` column to determine whether a challenge accepts
+> new activity. This ensures consistency even if `status` is stale.
 
 ### get_leaderboard
 
@@ -185,7 +195,7 @@ log_activity(
 
 **Errors:**
 
-- `challenge_not_active` — Challenge is archived/completed/cancelled
+- `challenge_not_active` — Challenge dates indicate it is not currently active, or it is cancelled/archived
 - `not_participant` — Caller is not an accepted participant
 - Duplicate `client_event_id` — Silently ignored (idempotency)
 

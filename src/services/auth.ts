@@ -20,7 +20,7 @@ import {
 } from "@/lib/validation";
 import { normalizeUsername } from "@/lib/username";
 import { clearPersistedQueryCache } from "@/lib/queryPersister";
-import type { Profile, ProfilePublic } from "@/types/database";
+import type { Profile, ProfilePublic } from "@/types/database-helpers";
 
 // Re-export normalizeUsername for backward compatibility
 // (callers can import from '@/services/auth' or '@/lib/username')

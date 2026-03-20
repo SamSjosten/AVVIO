@@ -19,6 +19,9 @@ export const challengeKeys = {
   detail: (id: string) => [...challengeKeys.all, "detail", id] as const,
   leaderboard: (id: string, limit?: number) =>
     [...challengeKeys.all, "leaderboard", id, limit] as const,
+  /** Prefix key for invalidating ALL leaderboard queries for a challenge (any limit). */
+  leaderboardPrefix: (id: string) =>
+    [...challengeKeys.all, "leaderboard", id] as const,
 };
 
 // =============================================================================

@@ -42,7 +42,7 @@ import { pushTokenService } from "@/services/pushTokens";
 import { useSecurityStore } from "@/stores/securityStore";
 import { syncServerTime, getServerNow, RESYNC_INTERVAL_MS } from "@/lib/serverTime";
 import { resetHealthService } from "@/services/health";
-import type { Profile } from "@/types/database";
+import type { Profile } from "@/types/database-helpers";
 
 // =============================================================================
 // ERRORS

@@ -2,12 +2,12 @@
 // Activity Detail Screen - View single activity/workout details
 // Design System v2.0
 
-import React, { useMemo } from "react";
+import React from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { router, useLocalSearchParams, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/providers/ThemeProvider";
-import { useChallengeActivities } from "@/hooks/useActivities";
+import { useActivityDetail } from "@/hooks/useActivities";
 import { LoadingState } from "@/components/shared";
 import {
   ChevronLeftIcon,
@@ -17,10 +17,6 @@ import {
   FireIcon,
   MapPinIcon,
 } from "react-native-heroicons/outline";
-import { activityService } from "@/services/activities";
-import { activityKeys } from "@/lib/queryKeys";
-import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/providers/AuthProvider";
 
 // Activity type colors
 const activityColors: Record<string, { text: string; bg: string }> = {
@@ -42,20 +38,8 @@ const activityColors: Record<string, { text: string; bg: string }> = {
 export default function ActivityDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors, spacing, radius } = useAppTheme();
-  const { session } = useAuth();
 
-  // Fetch activity by loading recent activities and finding the one we need
-  // In a real app, you'd have a dedicated getActivityById endpoint
-  const { data: activities, isLoading, isError, refetch } = useQuery({
-    queryKey: activityKeys.detail(id as string),
-    queryFn: () => activityService.getRecentActivities({ limit: 100 }),
-    enabled: !!session?.user?.id && !!id,
-  });
-
-  const activity = useMemo(() => {
-    if (!activities || !id) return null;
-    return activities.find((a) => a.id === id);
-  }, [activities, id]);
+  const { data: activity, isLoading, isError, refetch } = useActivityDetail(id);
 
   // Format helpers
   const formatDate = (dateString: string) => {

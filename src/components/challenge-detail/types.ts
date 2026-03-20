@@ -12,7 +12,7 @@
 // - Rendering without viewer role awareness → type error (not a dead-end UX)
 
 import type { ChallengeWithParticipation, LeaderboardEntry } from "@/services/challenges";
-import type { ProfilePublic } from "@/types/database";
+import type { ProfilePublic } from "@/types/database-helpers";
 import type { EffectiveStatus } from "@/lib/challengeStatus";
 
 // =============================================================================
