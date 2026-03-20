@@ -98,7 +98,9 @@ export function findMatchingChallenge(
     const startDate = new Date(challenge.start_date);
     const endDate = new Date(challenge.end_date);
 
-    if (activityDate < startDate || activityDate > endDate) {
+    // Half-open interval [start, end): activities at exactly end_date belong
+    // to the period AFTER the challenge ends (matches challengeStatus.ts convention)
+    if (activityDate < startDate || activityDate >= endDate) {
       return false;
     }
 

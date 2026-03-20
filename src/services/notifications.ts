@@ -1,5 +1,8 @@
+import { z } from "zod";
 import { getSupabaseClient, withAuth } from "@/lib/supabase";
 import { notificationIdSchema } from "@/lib/validation";
+
+const notificationDataSchema = z.record(z.string(), z.unknown()).catch({});
 import type { Notification as DbNotification } from "@/types/database-helpers";
 
 // Service-level Notification type with guaranteed non-null fields.
@@ -23,10 +26,7 @@ function mapNotification(db: DbNotification): Notification {
     ...rest,
     created_at: db.created_at,
     dismissed_at: db.dismissed_at ?? null,
-    data:
-      data !== null && typeof data === "object" && !Array.isArray(data)
-        ? (data as Record<string, unknown>)
-        : {},
+    data: notificationDataSchema.parse(data),
   };
 }
 

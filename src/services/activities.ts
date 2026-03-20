@@ -4,7 +4,7 @@
 // GUARDRAIL 3: Falls back to queue if offline
 
 import { SupabaseClient } from "@supabase/supabase-js";
-import { getSupabaseClient, withAuth } from "@/lib/supabase";
+import { getSupabaseClient, withAuth, requireUserId } from "@/lib/supabase";
 import { validate, logActivitySchema, logWorkoutSchema, uuidSchema, challengeIdSchema } from "@/lib/validation";
 import { checkNetworkStatus } from "@/hooks/useNetworkStatus";
 import { useOfflineStore } from "@/stores/offlineStore";
@@ -90,7 +90,7 @@ function isNetworkError(error: unknown): boolean {
 /**
  * Execute a log_activity RPC call directly.
  * Does NOT check network status or enqueue on failure.
- * Caller must ensure authentication (withAuth or requireUserId).
+ * Auth is enforced internally via requireUserId().
  */
 export async function executeLogActivity(payload: {
   challenge_id: string;
@@ -98,6 +98,7 @@ export async function executeLogActivity(payload: {
   value: number;
   client_event_id: string;
 }): Promise<void> {
+  await requireUserId();
   const args: LogActivityArgs = {
     p_challenge_id: payload.challenge_id,
     p_activity_type: payload.activity_type,
@@ -122,7 +123,7 @@ export async function executeLogActivity(payload: {
 /**
  * Execute a log_workout RPC call directly.
  * Does NOT check network status or enqueue on failure.
- * Caller must ensure authentication (withAuth or requireUserId).
+ * Auth is enforced internally via requireUserId().
  *
  * @param payload.recorded_at - ISO timestamp for when the workout occurred.
  *   For live calls, use getServerNow(). For replay, use the value captured at enqueue time.
@@ -134,6 +135,7 @@ export async function executeLogWorkout(payload: {
   client_event_id: string;
   recorded_at: string;
 }): Promise<number> {
+  await requireUserId();
   const { data, error } = await getSupabaseClient().rpc("log_workout", {
     p_challenge_id: payload.challenge_id,
     p_workout_type: payload.workout_type,
@@ -409,6 +411,11 @@ export const activityService = {
     const MAX_LIMIT = 100;
     const limit = Math.min(Math.max(1, options.limit ?? 20), MAX_LIMIT);
     const { challengeId, beforeRecordedAt, beforeId, client: injectedClient } = options;
+
+    // Validate optional challengeId
+    if (challengeId) {
+      challengeIdSchema.parse(challengeId);
+    }
 
     // Validate cursor: both fields required together for stable pagination
     if (beforeRecordedAt && !beforeId) {

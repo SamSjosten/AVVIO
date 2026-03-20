@@ -30,11 +30,12 @@ export function useHealthSync(): UseHealthSyncResult {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: healthQueryKeys.connection });
+      // Use prefix keys for invalidation so all parameterized variants are matched
       queryClient.invalidateQueries({
-        queryKey: healthQueryKeys.syncHistory(),
+        queryKey: ["health", "syncHistory"],
       });
       queryClient.invalidateQueries({
-        queryKey: healthQueryKeys.recentActivities(),
+        queryKey: ["health", "activities"],
       });
       queryClient.invalidateQueries({ queryKey: ["challenges"] });
       // Health sync writes to activity_logs — invalidate activity caches too

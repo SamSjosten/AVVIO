@@ -360,9 +360,13 @@ export class HealthService implements IHealthService {
   async getRecentActivities(limit = 50, offset = 0): Promise<RecentHealthActivity[]> {
     await requireUserId(); // Fail fast if session expired
 
+    // Clamp inputs to safe ranges before sending to RPC
+    const safeLimit = Math.min(Math.max(1, Math.floor(limit)), 500);
+    const safeOffset = Math.max(0, Math.floor(offset));
+
     const { data, error } = await getSupabaseClient().rpc("get_recent_health_activities", {
-      p_limit: limit,
-      p_offset: offset,
+      p_limit: safeLimit,
+      p_offset: safeOffset,
     });
 
     if (error) {

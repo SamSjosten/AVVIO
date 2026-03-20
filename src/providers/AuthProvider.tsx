@@ -411,12 +411,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       `[AuthProvider] 🆕 New social user ${shortId} (age=${Math.round(ageMs / 1000)}s), setting onboarding flag`,
     );
 
-    const { error } = await getSupabaseClient().auth.updateUser({
-      data: { onboarding_completed: false },
-    });
-
-    if (error) {
-      console.warn(`[AuthProvider] Failed to set onboarding metadata:`, error.message);
+    try {
+      await authService.setOnboardingFlag(false);
+    } catch (flagError) {
+      console.warn(`[AuthProvider] Failed to set onboarding metadata:`, flagError);
       return session;
     }
 

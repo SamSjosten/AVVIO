@@ -37,8 +37,10 @@ const challengeRpcRowSchema = z.object({
   end_date: z.string(),
   starting_soon_notified_at: z.string().nullable().optional(),
   ending_soon_notified_at: z.string().nullable().optional(),
-  completed_notified_at: z.string().nullable(),
-  final_push_notified_at: z.string().nullable(),
+  // These fields exist on the challenges table but are NOT returned by get_my_challenges RPC.
+  // Marked optional to prevent Zod parse failures from schema drift.
+  completed_notified_at: z.string().nullable().optional(),
+  final_push_notified_at: z.string().nullable().optional(),
   status: z.enum(["draft", "pending", "active", "completed", "archived", "cancelled"]),
   xp_reward: z.number().nullable(),
   max_participants: z.number().nullable(),
@@ -46,7 +48,8 @@ const challengeRpcRowSchema = z.object({
   custom_activity_name: z.string().nullable(),
   allowed_workout_types: z.array(z.string()).nullable(),
   is_solo: z.boolean(),
-  workout_activity_filter: z.array(z.string()).nullable(),
+  // Not returned by get_my_challenges RPC — optional to prevent parse failures
+  workout_activity_filter: z.array(z.string()).nullable().optional(),
   created_at: z.string(),
   updated_at: z.string(),
   // Participation fields (from RPC)
@@ -133,6 +136,9 @@ function mapRpcToChallengeWithParticipation(row: ChallengeRpcRow): ChallengeWith
     my_rank,
     starting_soon_notified_at,
     ending_soon_notified_at,
+    completed_notified_at,
+    final_push_notified_at,
+    workout_activity_filter,
     ...challengeFields
   } = row;
 
@@ -140,6 +146,9 @@ function mapRpcToChallengeWithParticipation(row: ChallengeRpcRow): ChallengeWith
     ...challengeFields,
     starting_soon_notified_at: starting_soon_notified_at ?? null,
     ending_soon_notified_at: ending_soon_notified_at ?? null,
+    completed_notified_at: completed_notified_at ?? null,
+    final_push_notified_at: final_push_notified_at ?? null,
+    workout_activity_filter: workout_activity_filter ?? null,
     my_participation: {
       invite_status: my_invite_status,
       current_progress: my_current_progress,
@@ -541,6 +550,7 @@ export const challengeService = {
    * Used to gate leaderboard access in UI
    */
   async canViewLeaderboard(challengeId: string): Promise<boolean> {
+    challengeIdSchema.parse(challengeId);
     return withAuth(async (userId) => {
       const { data } = await getSupabaseClient()
         .from("challenge_participants")

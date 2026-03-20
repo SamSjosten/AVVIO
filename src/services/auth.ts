@@ -186,6 +186,7 @@ export const authService = {
    * If all retries fail, something is wrong (network, Supabase, or auth context).
    */
   async getMyProfileWithUserId(userId: string): Promise<Profile> {
+    uuidSchema.parse(userId);
     const TIMEOUT_MS = 5000;
     const MAX_RETRIES = 3;
     const RETRY_BASE_MS = 500;
@@ -474,15 +475,23 @@ export const authService = {
   },
 
   /**
+   * Set the onboarding_completed flag in user_metadata.
+   * Used by AuthProvider for new social-auth users and by markOnboardingComplete.
+   */
+  async setOnboardingFlag(completed: boolean): Promise<void> {
+    const { error } = await getSupabaseClient().auth.updateUser({
+      data: { onboarding_completed: completed },
+    });
+    if (error) throw error;
+  },
+
+  /**
    * Mark onboarding as completed in user_metadata.
    * Checked by ProtectedRoute to determine if user needs onboarding.
    */
   async markOnboardingComplete(): Promise<void> {
     return withAuth(async () => {
-      const { error } = await getSupabaseClient().auth.updateUser({
-        data: { onboarding_completed: true },
-      });
-      if (error) throw error;
+      await this.setOnboardingFlag(true);
     });
   },
 
@@ -523,14 +532,8 @@ export const authService = {
         // Non-fatal — onboarding redirect still works
       }
 
-      // 2. Reset onboarding flag in user_metadata
-      const { error: metadataError } = await getSupabaseClient().auth.updateUser({
-        data: { onboarding_completed: false },
-      });
-
-      if (metadataError) {
-        throw new Error(`Metadata update failed: ${metadataError.message}`);
-      }
+      // 2. Reset onboarding flag in user_metadata (via service method)
+      await authService.setOnboardingFlag(false);
     });
   },
 };

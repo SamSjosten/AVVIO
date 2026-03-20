@@ -217,8 +217,11 @@ export function useRespondToInvite() {
       }
     },
 
-    onSettled: () => {
+    onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: challengeKeys.pending() });
+      // Invalidate detail + leaderboard so UI reflects new participant state
+      queryClient.invalidateQueries({ queryKey: challengeKeys.detail(variables.challenge_id) });
+      queryClient.invalidateQueries({ queryKey: challengeKeys.leaderboardPrefix(variables.challenge_id) });
       // Trigger refetch notifications since the DB trigger marked the invite notification as read
       queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
     },

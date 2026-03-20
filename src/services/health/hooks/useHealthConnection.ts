@@ -3,7 +3,7 @@
 // useHealthConnection Hook
 // =============================================================================
 
-import { useState, useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { Platform } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getHealthService } from "../healthService";
@@ -34,14 +34,8 @@ export function useHealthConnection(): UseHealthConnectionResult {
   const queryClient = useQueryClient();
   const healthService = getHealthService();
 
-  const [isAvailable, setIsAvailable] = useState(Platform.OS === "ios");
-
-  useEffect(() => {
-    healthService
-      .getConnectionStatus()
-      .then(() => setIsAvailable(true))
-      .catch(() => setIsAvailable(Platform.OS === "ios"));
-  }, []);
+  // Platform availability — iOS always available, others depend on query success
+  const platformAvailable = Platform.OS === "ios";
 
   const {
     data: connectionData,
@@ -54,8 +48,11 @@ export function useHealthConnection(): UseHealthConnectionResult {
       return healthService.getConnectionStatus();
     },
     staleTime: 30_000,
-    enabled: isAvailable,
+    enabled: platformAvailable,
   });
+
+  // Derive availability from query result: available if query succeeded or platform is iOS
+  const isAvailable = platformAvailable && (!queryError || !!connectionData);
 
   const connectMutation = useMutation({
     mutationFn: async (permissions?: HealthPermission[]) => {
