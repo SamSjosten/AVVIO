@@ -34,12 +34,12 @@ const challenge = await challengeService.create({
 });
 ```
 
-### getMyActive()
+### getMyActiveChallenges()
 
 Get challenges where the current user is an accepted participant.
 
 ```typescript
-const challenges = await challengeService.getMyActive();
+const challenges = await challengeService.getMyActiveChallenges();
 ```
 
 ### getPendingInvites()
@@ -97,17 +97,16 @@ await challengeService.logActivity({
 import { activityService } from "@/services/activities";
 ```
 
-### logManual(input)
+### logActivity(input)
 
 Log a manual activity entry.
 
 ```typescript
-await activityService.logManual({
+await activityService.logActivity({
   challenge_id: "challenge-uuid",
   activity_type: "steps",
   value: 1000,
   client_event_id: randomUUID(),
-  recorded_at: new Date().toISOString(), // Optional
 });
 ```
 
@@ -128,16 +127,12 @@ await activityService.logWorkout({
 
 **Important:** Workouts go through a different scoring path than generic activities. The `log_workout` RPC applies workout-type multipliers (e.g., yoga 1.5×, running 2.0×), while `log_activity` treats the value as raw points.
 
-### getHistory(options)
+### getChallengeActivities(challengeId, limit?)
 
-Get activity history for the current user.
+Get activity history for a specific challenge.
 
 ```typescript
-const activities = await activityService.getHistory({
-  limit: 50,
-  offset: 0,
-  challenge_id: "optional-filter",
-});
+const activities = await activityService.getChallengeActivities("challenge-uuid", 50);
 ```
 
 ## Friends Service
@@ -146,12 +141,12 @@ const activities = await activityService.getHistory({
 import { friendsService } from "@/services/friends";
 ```
 
-### getAll()
+### getFriends()
 
 Get all accepted friendships for the current user.
 
 ```typescript
-const friends = await friendsService.getAll();
+const friends = await friendsService.getFriends();
 // Returns friendship with requester and recipient profile data
 ```
 
@@ -195,12 +190,12 @@ Decline a friend request. Only the recipient can decline.
 await friendsService.declineRequest("friendship-uuid");
 ```
 
-### removeFriendship(friendshipId)
+### removeFriend(friendshipId)
 
 Remove a friendship. Either party can remove.
 
 ```typescript
-await friendsService.removeFriendship("friendship-uuid");
+await friendsService.removeFriend("friendship-uuid");
 ```
 
 ## Health Service
@@ -364,7 +359,7 @@ Services that support offline operations:
 
 | Service                          | Offline Support | Queue Action Type    | Notes                                        |
 | -------------------------------- | --------------- | -------------------- | -------------------------------------------- |
-| activityService.logManual        | ✅ Queued       | `LOG_ACTIVITY`       | Syncs when online via `log_activity` RPC     |
+| activityService.logActivity      | ✅ Queued       | `LOG_ACTIVITY`       | Syncs when online via `log_activity` RPC     |
 | activityService.logWorkout       | ✅ Queued       | `LOG_WORKOUT`        | Syncs when online via `log_workout` RPC      |
 | friendsService.sendRequest       | ✅ Queued       | `SEND_FRIEND_REQUEST`| Syncs when online                            |
 | challengeService.respondToInvite | ✅ Queued       | `ACCEPT_INVITE`      | Syncs when online                            |

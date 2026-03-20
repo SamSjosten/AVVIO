@@ -6,6 +6,14 @@ import type { ChallengeWithParticipation } from "@/services/challenges";
 // Import after mocks are set up
 import { splitChallengesByStatus } from "../useHomeScreenData";
 
+// Mock native/Expo modules to avoid parse errors in Node environment
+jest.mock("expo-router", () => ({ useFocusEffect: jest.fn() }));
+jest.mock("@/hooks/useChallenges", () => ({}));
+jest.mock("@/hooks/useActivities", () => ({}));
+jest.mock("@/hooks/useNotifications", () => ({}));
+jest.mock("@/providers/AuthProvider", () => ({}));
+jest.mock("@/services/pushTokens", () => ({}));
+
 // Mock serverTime module before importing the function under test
 const mockGetServerNow = jest.fn();
 jest.mock("@/lib/serverTime", () => ({

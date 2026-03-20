@@ -19,7 +19,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/providers/AuthProvider";
 import { authService } from "@/services/auth";
-import { getSupabaseClient } from "@/lib/supabase";
 import { useNavigationStore } from "@/stores/navigationStore";
 import { useHealthConnection } from "@/services/health";
 
@@ -364,15 +363,7 @@ export default function OnboardingScreen() {
    */
   const markOnboardingComplete = async (): Promise<boolean> => {
     try {
-      const supabase = getSupabaseClient();
-      const { error } = await supabase.auth.updateUser({
-        data: { onboarding_completed: true },
-      });
-      if (error) {
-        console.error("[Onboarding] Failed to update user metadata:", error);
-        return false;
-      }
-
+      await authService.markOnboardingComplete();
       // updateUser() emits USER_UPDATED, which AuthProvider handles
       // by updating React state with the new session metadata.
       // ProtectedRoute will see onboarding_completed=true immediately.

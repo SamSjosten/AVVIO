@@ -1,27 +1,16 @@
-const { createDefaultPreset } = require("ts-jest");
-
-const tsJestTransformCfg = createDefaultPreset().transform;
-
 /** @type {import("jest").Config} **/
 module.exports = {
-  testEnvironment: "node",
-  transform: {
-    ...tsJestTransformCfg,
-  },
-  moduleNameMapper: {
-    "^@/(.*)$": "<rootDir>/src/$1",
-  },
-
   // Use projects for different test types
   projects: [
     {
       displayName: "unit",
       testEnvironment: "node",
       transform: {
-        ...tsJestTransformCfg,
+        "^.+\\.tsx?$": ["ts-jest", { tsconfig: "tsconfig.json" }],
       },
       moduleNameMapper: {
         "^@/(.*)$": "<rootDir>/src/$1",
+        "^react-native-url-polyfill/auto$": "<rootDir>/jest.emptyModule.js",
       },
       // Match unit tests (in __tests__ folders but NOT .integration.test.ts or .component.test.tsx)
       testMatch: ["<rootDir>/src/**/__tests__/**/*.test.ts"],
@@ -30,12 +19,13 @@ module.exports = {
         "\\.integration\\.test\\.ts$",
         "\\.component\\.test\\.tsx?$",
       ],
+      setupFilesAfterEnv: ["./jest.setup.js"],
     },
     {
       displayName: "integration",
       testEnvironment: "node",
       transform: {
-        ...tsJestTransformCfg,
+        "^.+\\.tsx?$": ["ts-jest", { tsconfig: "tsconfig.json" }],
       },
       moduleNameMapper: {
         "^@/(.*)$": "<rootDir>/src/$1",

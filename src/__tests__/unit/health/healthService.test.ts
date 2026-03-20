@@ -53,71 +53,67 @@ const mockFromCalls: { table: string; method: string }[] = [];
 let mockRpcResponses: Record<string, { data: unknown; error: unknown }> = {};
 let mockFromResponses: Record<string, { data: unknown; error: unknown }> = {};
 
-const createSupabaseMock = () => {
-  const createChainMock = (
-    tableName: string,
-    finalData: unknown = null,
-    finalError: unknown = null,
-  ) => {
-    const chain: Record<string, jest.Mock> = {
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      limit: jest.fn().mockReturnThis(),
-      order: jest.fn().mockReturnThis(),
-      single: jest.fn(() => {
-        mockFromCalls.push({ table: tableName, method: "single" });
-        const response = mockFromResponses[tableName] || {
-          data: finalData,
-          error: finalError,
-        };
-        return Promise.resolve(response);
-      }),
-    };
+// Reusable Supabase mock handles — reset in beforeEach
+let mockRpc: jest.Mock;
+let mockFrom: jest.Mock;
+let mockGetUser: jest.Mock;
+let mockGetUserId: jest.Mock;
 
-    // Make chain thenable for async operations that don't call .single()
-    Object.defineProperty(chain, "then", {
-      value: (resolve: (value: unknown) => void) => {
-        mockFromCalls.push({ table: tableName, method: "then" });
-        const response = mockFromResponses[tableName] || {
-          data: finalData,
-          error: finalError,
-        };
-        return Promise.resolve(response).then(resolve);
-      },
-      configurable: true,
-    });
-
-    return chain;
+function createChainMock(tableName: string) {
+  const chain: Record<string, jest.Mock> = {
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+    order: jest.fn().mockReturnThis(),
+    single: jest.fn(() => {
+      mockFromCalls.push({ table: tableName, method: "single" });
+      const response = mockFromResponses[tableName] || { data: null, error: null };
+      return Promise.resolve(response);
+    }),
   };
 
-  return {
-    auth: {
-      getUser: jest.fn(() =>
-        Promise.resolve({
-          data: { user: { id: mockUserId } },
-          error: null,
-        }),
-      ),
+  // Make chain thenable for async operations that don't call .single()
+  Object.defineProperty(chain, "then", {
+    value: (resolve: (value: unknown) => void) => {
+      mockFromCalls.push({ table: tableName, method: "then" });
+      const response = mockFromResponses[tableName] || { data: null, error: null };
+      return Promise.resolve(response).then(resolve);
     },
-    rpc: jest.fn((fnName: string, args: Record<string, unknown>) => {
-      mockRpcCalls.push({ fn: fnName, args });
-      const response = mockRpcResponses[fnName] || { data: null, error: null };
+    configurable: true,
+  });
 
-      // Return object with .single() method for RPC calls that need it
-      return {
-        single: jest.fn(() => Promise.resolve(response)),
-        then: (resolve: (value: unknown) => void) => Promise.resolve(response).then(resolve),
-      };
-    }),
-    from: jest.fn((tableName: string) => {
-      mockFromCalls.push({ table: tableName, method: "from" });
-      return createChainMock(tableName);
-    }),
+  return chain;
+}
+
+// Initialize mock handles
+mockGetUser = jest.fn(() =>
+  Promise.resolve({ data: { user: { id: mockUserId } }, error: null }),
+);
+mockGetUserId = jest.fn(() => Promise.resolve(mockUserId));
+
+mockRpc = jest.fn((fnName: string, args: Record<string, unknown>) => {
+  mockRpcCalls.push({ fn: fnName, args });
+  const response = mockRpcResponses[fnName] || { data: null, error: null };
+  return {
+    single: jest.fn(() => Promise.resolve(response)),
+    maybeSingle: jest.fn(() => Promise.resolve(response)),
+    then: (resolve: (value: unknown) => void) => Promise.resolve(response).then(resolve),
   };
-};
+});
+
+mockFrom = jest.fn((tableName: string) => {
+  mockFromCalls.push({ table: tableName, method: "from" });
+  return createChainMock(tableName);
+});
 
 jest.mock("@/lib/supabase", () => ({
-  supabase: createSupabaseMock(),
+  getSupabaseClient: () => ({
+    auth: { getUser: (...args: unknown[]) => mockGetUser(...args) },
+    rpc: (...args: unknown[]) => mockRpc(...(args as [string, Record<string, unknown>])),
+    from: (...args: unknown[]) => mockFrom(...(args as [string])),
+  }),
+  getUserId: (...args: unknown[]) => mockGetUserId(...args),
+  requireUserId: () => Promise.resolve(mockUserId),
 }));
 
 // Mock health utils
@@ -144,11 +140,34 @@ jest.mock("@/services/health/utils", () => ({
 // =============================================================================
 
 function resetMocks() {
+  // Clear all mocks first, then reconfigure handles
+  jest.clearAllMocks();
+
   mockRpcCalls.length = 0;
   mockFromCalls.length = 0;
   mockRpcResponses = {};
   mockFromResponses = {};
-  jest.clearAllMocks();
+
+  // Reset mock handles to default behavior
+  mockGetUser.mockImplementation(() =>
+    Promise.resolve({ data: { user: { id: mockUserId } }, error: null }),
+  );
+  mockGetUserId.mockImplementation(() => Promise.resolve(mockUserId));
+
+  mockRpc.mockImplementation((fnName: string, args: Record<string, unknown>) => {
+    mockRpcCalls.push({ fn: fnName, args });
+    const response = mockRpcResponses[fnName] || { data: null, error: null };
+    return {
+      single: jest.fn(() => Promise.resolve(response)),
+      maybeSingle: jest.fn(() => Promise.resolve(response)),
+      then: (resolve: (value: unknown) => void) => Promise.resolve(response).then(resolve),
+    };
+  });
+
+  mockFrom.mockImplementation((tableName: string) => {
+    mockFromCalls.push({ table: tableName, method: "from" });
+    return createChainMock(tableName);
+  });
 }
 
 function setRpcResponse(fnName: string, data: unknown, error: unknown = null) {
@@ -160,13 +179,17 @@ function setFromResponse(tableName: string, data: unknown, error: unknown = null
 }
 
 function createMockSamples(count: number, type = "steps"): HealthSample[] {
+  // Space samples 10 minutes apart so they all fit within the 7-day manual sync window
+  // Start 10 minutes in the past so all endDates are before "now"
+  const TEN_MIN = 10 * 60 * 1000;
+  const base = Date.now() - TEN_MIN;
   return Array.from({ length: count }, (_, i) => ({
     id: `sample-${i}`,
     type: type as HealthSample["type"],
     value: 1000 + i * 100,
     unit: "count",
-    startDate: new Date(Date.now() - i * 60 * 60 * 1000),
-    endDate: new Date(Date.now() - i * 60 * 60 * 1000 + 30 * 60 * 1000),
+    startDate: new Date(base - i * TEN_MIN),
+    endDate: new Date(base - i * TEN_MIN + 5 * 60 * 1000),
     sourceName: "TestSource",
     sourceId: "com.test.source",
   }));
@@ -227,12 +250,8 @@ describe("HealthService", () => {
       const mockProvider = new MockHealthProvider({ isAvailable: true });
       const service = createMockHealthService(mockProvider);
 
-      // Mock no user
-      const { supabase } = require("@/lib/supabase");
-      supabase.auth.getUser.mockResolvedValueOnce({
-        data: { user: null },
-        error: null,
-      });
+      // getConnectionStatus calls getUserId()
+      mockGetUserId.mockResolvedValueOnce(null);
 
       const result = await service.getConnectionStatus();
 
@@ -575,11 +594,8 @@ describe("HealthService", () => {
       const mockProvider = createFullyGrantedMockProvider();
       const service = createMockHealthService(mockProvider);
 
-      const { supabase } = require("@/lib/supabase");
-      supabase.auth.getUser.mockResolvedValueOnce({
-        data: { user: null },
-        error: null,
-      });
+      // getSyncHistory calls getUserId(), not auth.getUser()
+      mockGetUserId.mockResolvedValueOnce(null);
 
       const result = await service.getSyncHistory();
 
@@ -714,11 +730,10 @@ describe("HealthService", () => {
       const service = createMockHealthService(mockProvider);
 
       let callCount = 0;
-      const { supabase } = require("@/lib/supabase");
-      const originalRpc = supabase.rpc;
+      const originalImpl = mockRpc.getMockImplementation();
 
       // Override to return different results per batch
-      supabase.rpc.mockImplementation((fn: string, args: Record<string, unknown>) => {
+      mockRpc.mockImplementation((fn: string, args: Record<string, unknown>) => {
         mockRpcCalls.push({ fn, args });
 
         if (fn === "log_health_activity") {
@@ -740,6 +755,7 @@ describe("HealthService", () => {
 
           return {
             single: jest.fn(() => Promise.resolve({ data: batchResult, error: null })),
+            maybeSingle: jest.fn(() => Promise.resolve({ data: batchResult, error: null })),
             then: (resolve: (v: unknown) => void) =>
               Promise.resolve({ data: batchResult, error: null }).then(resolve),
           };
@@ -748,6 +764,7 @@ describe("HealthService", () => {
         const response = mockRpcResponses[fn] || { data: null, error: null };
         return {
           single: jest.fn(() => Promise.resolve(response)),
+          maybeSingle: jest.fn(() => Promise.resolve(response)),
           then: (resolve: (v: unknown) => void) => Promise.resolve(response).then(resolve),
         };
       });
@@ -763,7 +780,7 @@ describe("HealthService", () => {
       expect(result.recordsProcessed).toBe(150);
 
       // Restore original mock
-      supabase.rpc = originalRpc;
+      if (originalImpl) mockRpc.mockImplementation(originalImpl);
     });
   });
 });

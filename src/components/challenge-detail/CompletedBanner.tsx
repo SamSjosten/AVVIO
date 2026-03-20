@@ -62,7 +62,7 @@ export function CompletedBanner({
         overflow: "hidden",
         backgroundColor: colors.surface,
         borderWidth: 1,
-        borderColor: isCurrentUserWinner ? "#00D26A40" : colors.border,
+        borderColor: isCurrentUserWinner ? `${colors.primary.main}40` : colors.border,
       }}
     >
       {/* Winner Section */}
@@ -71,7 +71,7 @@ export function CompletedBanner({
           flexDirection: "row",
           alignItems: "center",
           padding: spacing.md,
-          backgroundColor: isCurrentUserWinner ? "#00D26A10" : colors.surface,
+          backgroundColor: isCurrentUserWinner ? `${colors.primary.main}10` : colors.surface,
         }}
       >
         <View
@@ -79,13 +79,13 @@ export function CompletedBanner({
             width: 40,
             height: 40,
             borderRadius: 20,
-            backgroundColor: isCurrentUserWinner ? "#00D26A20" : "#FFD70020",
+            backgroundColor: isCurrentUserWinner ? `${colors.primary.main}20` : "#FFD70020",
             justifyContent: "center",
             alignItems: "center",
             marginRight: spacing.sm,
           }}
         >
-          <TrophyIcon size={22} color={isCurrentUserWinner ? "#00D26A" : "#FFD700"} />
+          <TrophyIcon size={22} color={isCurrentUserWinner ? colors.primary.main : "#FFD700"} />
         </View>
 
         <View style={{ flex: 1 }}>
@@ -143,15 +143,15 @@ export function CompletedBanner({
           accessibilityRole="button"
         >
           {isRematchPending ? (
-            <ActivityIndicator size="small" color="#00D26A" />
+            <ActivityIndicator size="small" color={colors.primary.main} />
           ) : (
             <>
-              <ArrowPathIcon size={16} color="#00D26A" />
+              <ArrowPathIcon size={16} color={colors.primary.main} />
               <Text
                 style={{
                   fontSize: typography.fontSize.sm,
                   fontFamily: "PlusJakartaSans_600SemiBold",
-                  color: "#00D26A",
+                  color: colors.primary.main,
                   marginLeft: spacing.xs,
                 }}
               >

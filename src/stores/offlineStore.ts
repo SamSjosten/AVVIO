@@ -10,6 +10,8 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getSupabaseClient, requireUserId } from "@/lib/supabase";
+import { challengeService } from "@/services/challenges";
+import { friendsService } from "@/services/friends";
 
 // =============================================================================
 // TYPES
@@ -209,29 +211,35 @@ async function executeAction(action: QueuedAction): Promise<void> {
     }
 
     case "ACCEPT_INVITE": {
-      const userId = await requireUserId();
-
-      const { error } = await supabase
-        .from("challenge_participants")
-        .update({ invite_status: "accepted" })
-        .eq("challenge_id", action.payload.challenge_id)
-        .eq("user_id", userId);
-
-      if (error) throw error;
+      try {
+        await challengeService.respondToInvite({
+          challenge_id: action.payload.challenge_id,
+          response: "accepted",
+        });
+      } catch (err) {
+        // Idempotent: invite already resolved is not an error during replay
+        if (
+          err instanceof Error &&
+          err.message === "No pending invite found for this challenge"
+        ) break;
+        throw err;
+      }
       break;
     }
 
     case "SEND_FRIEND_REQUEST": {
-      const userId = await requireUserId();
-
-      const { error } = await supabase.from("friends").insert({
-        requested_by: userId,
-        requested_to: action.payload.target_user_id,
-        status: "pending",
-      });
-
-      // Idempotency: duplicate is success
-      if (error && error.code !== "23505") throw error;
+      try {
+        await friendsService.sendRequest({
+          target_user_id: action.payload.target_user_id,
+        });
+      } catch (err) {
+        // Idempotent: duplicate request is not an error during replay
+        if (
+          err instanceof Error &&
+          err.message === "Friend request already exists"
+        ) break;
+        throw err;
+      }
       break;
     }
 

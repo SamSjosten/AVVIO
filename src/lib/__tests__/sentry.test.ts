@@ -2,11 +2,10 @@
 // Unit tests for Sentry error filtering
 
 // Set __DEV__ for test environment (React Native global)
-// @ts-expect-error - __DEV__ is a React Native global
+(global as typeof global & { __DEV__?: boolean }).__DEV__ = true;
+
 import * as Sentry from "@sentry/react-native";
 import { initSentry, captureError, setUserContext, addBreadcrumb } from "../sentry";
-
-globalThis.__DEV__ = true;
 
 // Mock @sentry/react-native before importing sentry.ts
 jest.mock("@sentry/react-native", () => ({
@@ -14,6 +13,8 @@ jest.mock("@sentry/react-native", () => ({
   captureException: jest.fn(),
   setUser: jest.fn(),
   addBreadcrumb: jest.fn(),
+  mobileReplayIntegration: jest.fn(() => ({})),
+  feedbackIntegration: jest.fn(() => ({})),
 }));
 
 // Mock config
@@ -28,8 +29,16 @@ jest.mock("@/constants/config", () => ({
 // =============================================================================
 
 describe("initSentry", () => {
+  const origDev = (global as typeof global & { __DEV__?: boolean }).__DEV__;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    // initSentry() skips when __DEV__ is true, so disable it for this block
+    (global as typeof global & { __DEV__?: boolean }).__DEV__ = false;
+  });
+
+  afterEach(() => {
+    (global as typeof global & { __DEV__?: boolean }).__DEV__ = origDev;
   });
 
   it("should call Sentry.init with correct config", () => {

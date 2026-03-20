@@ -1,4 +1,11 @@
 // src/lib/__tests__/challengeStatus.test.ts
+
+// Mock serverTime to avoid native module import chain
+// (challengeStatus → serverTime → supabase → react-native-url-polyfill)
+jest.mock("../serverTime", () => ({
+  getServerNow: () => new Date(),
+}));
+
 import {
   getEffectiveStatus,
   canLogActivity,

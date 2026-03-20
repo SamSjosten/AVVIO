@@ -469,6 +469,19 @@ export const authService = {
       if (error) throw error;
     });
   },
+
+  /**
+   * Mark onboarding as completed in user_metadata.
+   * Checked by ProtectedRoute to determine if user needs onboarding.
+   */
+  async markOnboardingComplete(): Promise<void> {
+    return withAuth(async () => {
+      const { error } = await getSupabaseClient().auth.updateUser({
+        data: { onboarding_completed: true },
+      });
+      if (error) throw error;
+    });
+  },
 };
 
 // =============================================================================

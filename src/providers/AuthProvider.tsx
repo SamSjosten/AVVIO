@@ -40,6 +40,7 @@ import { authService, configureGoogleSignIn } from "@/services/auth";
 import { pushTokenService } from "@/services/pushTokens";
 import { useSecurityStore } from "@/stores/securityStore";
 import { syncServerTime, getServerNow, RESYNC_INTERVAL_MS } from "@/lib/serverTime";
+import { resetHealthService } from "@/services/health";
 import type { Profile } from "@/types/database";
 
 // =============================================================================
@@ -234,6 +235,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (event === "SIGNED_OUT" || !session) {
         console.log(`[AuthProvider] 🚪 Signed out (event=${event})`);
         bootstrapComplete = true;
+        resetHealthService();
         setState({
           session: null,
           user: null,

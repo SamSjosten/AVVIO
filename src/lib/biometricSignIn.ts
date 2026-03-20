@@ -464,12 +464,7 @@ export async function performBiometricSignIn(
  * Note: This only returns email, not password
  */
 export async function getStoredEmail(): Promise<string | null> {
-  try {
-    // We can't get the email without biometric auth since it's stored together
-    // Instead, we could store email separately (unprotected) if needed for display
-    // For now, return null - the button will show generic text
-    return null;
-  } catch (error) {
-    return null;
-  }
+  // We can't get the email without biometric auth since it's stored together.
+  // The button will show generic text.
+  return null;
 }

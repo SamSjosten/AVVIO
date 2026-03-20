@@ -37,12 +37,6 @@ const {
 } = useAuth();
 ```
 
-### useBiometricAuth
-
-<!-- TODO: Document biometric auth hook -->
-
-**Location:** `src/hooks/useBiometricAuth.ts`
-
 ---
 
 ## Data Hooks
@@ -63,24 +57,6 @@ const {
   error,
   refetch,
 } = useChallenges();
-```
-
-### useChallengeDetail
-
-Single challenge with participants and leaderboard.
-
-**Location:** `src/hooks/useChallengeDetail.ts`
-
-```typescript
-const {
-  challenge, // Challenge | null
-  participants, // Participant[]
-  leaderboard, // LeaderboardEntry[]
-  myProgress, // number
-  isLoading,
-  error,
-  refetch,
-} = useChallengeDetail(challengeId);
 ```
 
 ### useFriends
@@ -120,22 +96,6 @@ const {
   archive, // (id: string) => Promise<void>
   refetch,
 } = useNotifications();
-```
-
-### useProfile
-
-Current user's profile.
-
-**Location:** `src/hooks/useProfile.ts`
-
-```typescript
-const {
-  profile, // Profile | null
-  isLoading,
-  error,
-  updateProfile, // (updates: Partial<Profile>) => Promise<void>
-  refetch,
-} = useProfile();
 ```
 
 ---
@@ -195,24 +155,6 @@ const {
 
 ## UI Hooks
 
-### useFeatureFlags
-
-UI version control.
-
-**Location:** `src/lib/featureFlags.ts`
-
-```typescript
-const {
-  uiVersion, // 'v1' | 'v2' | null
-  isLoading, // boolean
-  isV2, // boolean (convenience)
-  toggleVersion, // () => Promise<UIVersion>
-  setVersion, // (version: UIVersion) => Promise<void>
-} = useFeatureFlags();
-```
-
-See [Feature Flags Architecture](../architecture/feature-flags.md) for details.
-
 ### useNetworkStatus
 
 Online/offline detection.
@@ -228,13 +170,13 @@ const {
 
 ---
 
-## V2 Hooks
+## Home Screen Hooks
 
 ### useHomeScreenData
 
-Consolidated data for V2 home screen.
+Consolidated data for the home screen.
 
-**Location:** `src/hooks/v2/useHomeScreenData.ts`
+**Location:** `src/hooks/useHomeScreenData.ts`
 
 ```typescript
 const {
@@ -252,7 +194,7 @@ const {
 
 Challenge filtering state for V2.
 
-**Location:** `src/hooks/v2/useChallengeFilters.ts`
+**Location:** `src/hooks/useChallengeFilters.ts`
 
 ```typescript
 const {

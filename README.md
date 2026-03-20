@@ -83,20 +83,17 @@ npm run test:all      # All tests
 
 Integration tests run against a real Supabase instance:
 
-```bash
-cp .env.test.example .env.test
-# Edit .env.test with your Supabase credentials (URL, anon key, service role key)
-```
+Create a `.env.test` file with your Supabase credentials (URL, anon key, service role key).
 
 ⚠️ **Never commit `.env.test`** — the service role key bypasses RLS.
 
-> 📖 **For detailed testing strategy, conventions, and contracts, see [`docs/testing.md`](docs/testing.md).**
+> 📖 **For detailed testing strategy, conventions, and contracts, see [`docs/TESTING.md`](docs/TESTING.md).**
 
 ---
 
 ## Design System
 
-FitChallenge uses the **Electric Mint** design system with a cohesive theme built on Plus Jakarta Sans typography and Heroicons.
+FitChallenge uses the **Emerald** design system (Tailwind emerald-500 `#10B981`) with a cohesive theme built on Plus Jakarta Sans typography and Heroicons.
 
 ### Theme Prerequisites
 

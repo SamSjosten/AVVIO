@@ -5,6 +5,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useAppTheme } from "@/providers/ThemeProvider";
 
 interface ProfileErrorBoundaryProps {
   error: Error | null;
@@ -36,6 +37,8 @@ export function ProfileErrorBoundary({
   onRetry,
   children,
 }: ProfileErrorBoundaryProps) {
+  const { colors } = useAppTheme();
+
   // No error - render children normally
   if (!error) {
     return <>{children}</>;
@@ -58,7 +61,7 @@ export function ProfileErrorBoundary({
         </Text>
 
         <TouchableOpacity
-          style={[styles.retryButton, isRetrying && styles.retryButtonDisabled]}
+          style={[styles.retryButton, { backgroundColor: colors.primary.main }, isRetrying && styles.retryButtonDisabled]}
           onPress={onRetry}
           disabled={isRetrying}
         >
@@ -116,7 +119,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#00D26A",
+    // backgroundColor set inline via theme colors.primary.main
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,

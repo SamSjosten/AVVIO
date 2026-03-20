@@ -1,6 +1,6 @@
 # Health Integration Architecture
 
-FitChallenge integrates with HealthKit (iOS) and Google Fit (Android) to automatically sync fitness data.
+FitChallenge integrates with HealthKit (iOS) to automatically sync fitness data. Android/Google Fit support is planned but not yet implemented.
 
 ## Overview
 

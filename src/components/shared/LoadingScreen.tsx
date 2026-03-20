@@ -3,10 +3,10 @@
 
 import React from "react";
 import { View, ActivityIndicator } from "react-native";
-import { useTheme } from "@/constants/theme";
+import { useAppTheme } from "@/providers/ThemeProvider";
 
 export function LoadingScreen() {
-  const { colors } = useTheme();
+  const { colors } = useAppTheme();
 
   return (
     <View

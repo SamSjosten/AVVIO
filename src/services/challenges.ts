@@ -42,7 +42,7 @@ const challengeRpcRowSchema = z.object({
   is_public: z.boolean().nullable(),
   custom_activity_name: z.string().nullable(),
   allowed_workout_types: z.array(z.string()).nullable().optional(),
-  is_solo: z.boolean(),
+  is_solo: z.boolean().default(false),
   created_at: z.string(),
   updated_at: z.string(),
   // Participation fields (from RPC)

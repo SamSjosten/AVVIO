@@ -60,7 +60,7 @@ export function NotificationsScreen() {
   // Show toast on initial query error
   React.useEffect(() => {
     if (isQueryError) {
-      showToast("Failed to load notifications", "error");
+      showToast("Failed to load notifications", { variant: "error" });
     }
   }, [isQueryError, showToast]);
 
@@ -146,7 +146,7 @@ export function NotificationsScreen() {
     try {
       await refetch();
     } catch {
-      showToast("Failed to refresh notifications", "error");
+      showToast("Failed to refresh notifications", { variant: "error" });
     } finally {
       setRefreshing(false);
     }
@@ -157,7 +157,7 @@ export function NotificationsScreen() {
     if (!notification.read_at) {
       markRead.mutate(notification.id, {
         onError: () => {
-          showToast("Failed to mark as read", "error");
+          showToast("Failed to mark as read", { variant: "error" });
         },
       });
     }
@@ -205,7 +205,7 @@ export function NotificationsScreen() {
             action: "restore",
           });
         },
-        onError: () => showToast("Failed to restore notification", "error"),
+        onError: () => showToast("Failed to restore notification", { variant: "error" }),
       });
     } else {
       // In Unread/All tabs: archive immediately
@@ -218,7 +218,7 @@ export function NotificationsScreen() {
             action: "archive",
           });
         },
-        onError: () => showToast("Failed to archive notification", "error"),
+        onError: () => showToast("Failed to archive notification", { variant: "error" }),
       });
     }
   };
@@ -230,12 +230,12 @@ export function NotificationsScreen() {
     if (undoState.action === "archive") {
       // We archived → undo by restoring
       restoreMutation.mutate(undoState.notificationId, {
-        onError: () => showToast("Failed to undo", "error"),
+        onError: () => showToast("Failed to undo", { variant: "error" }),
       });
     } else {
       // We restored → undo by archiving
       archiveMutation.mutate(undoState.notificationId, {
-        onError: () => showToast("Failed to undo", "error"),
+        onError: () => showToast("Failed to undo", { variant: "error" }),
       });
     }
 
@@ -259,7 +259,7 @@ export function NotificationsScreen() {
   const handleMarkAllRead = () => {
     markAllRead.mutate(undefined, {
       onError: () => {
-        showToast("Failed to mark all as read", "error");
+        showToast("Failed to mark all as read", { variant: "error" });
       },
     });
   };

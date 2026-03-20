@@ -34,7 +34,7 @@ export async function setupNotificationChannel() {
       importance: Notifications.AndroidImportance.HIGH,
       sound: "default",
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#00D26A", // Electric Mint
+      lightColor: "#10B981", // Tailwind emerald-500 (primary)
     });
   }
 }

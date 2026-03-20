@@ -70,9 +70,7 @@ describe("Challenge Visibility Integration Tests", () => {
           p_end_date: endDate.toISOString(),
           // Optional parameters
           p_description: "Testing atomic challenge creation",
-          p_custom_activity_name: null,
           p_win_condition: "highest_total",
-          p_daily_target: null,
         },
       );
 
