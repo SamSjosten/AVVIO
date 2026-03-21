@@ -13,7 +13,7 @@ import {
 } from "@/lib/validation";
 import type { Challenge, ChallengeParticipant, ProfilePublic } from "@/types/database-helpers";
 import { getServerNow } from "@/lib/serverTime";
-import { captureError, addBreadcrumb } from "@/lib/sentry";
+import { addBreadcrumb } from "@/lib/sentry";
 
 // =============================================================================
 // RPC RESPONSE VALIDATION
@@ -419,30 +419,18 @@ export const challengeService = {
     const { challenge_id, user_id } = validate(inviteParticipantSchema, input);
 
     return withAuth(async () => {
-      // Atomic invite with max_participants check (RLS still enforced)
-      const { error: inviteError } = await getSupabaseClient().rpc("invite_to_challenge", {
+      // Atomic invite + notification (single RPC transaction)
+      const { error } = await getSupabaseClient().rpc("invite_to_challenge", {
         p_challenge_id: challenge_id,
         p_user_id: user_id,
       });
 
-      if (inviteError) {
-        // Handle max participants exceeded
-        if (inviteError.message?.includes("challenge_full")) {
-          throw new Error("Challenge is full");
-        }
-        throw inviteError;
-      }
-
-      // Trigger notification (server-side function)
-      const { error: notifyError } = await getSupabaseClient().rpc(
-        "enqueue_challenge_invite_notification",
-        { p_challenge_id: challenge_id, p_invited_user_id: user_id },
-      );
-
-      // Log but don't fail on notification error
-      if (notifyError) {
-        console.error("Failed to send invite notification:", notifyError);
-        captureError(notifyError, { context: "challenge-invite-notification" });
+      if (error) {
+        if (error.message?.includes("challenge_full")) throw new Error("Challenge is full");
+        if (error.message?.includes("duplicate_invite")) throw new Error("User already invited");
+        if (error.message?.includes("challenge_not_found")) throw new Error("Challenge not found");
+        if (error.message?.includes("not_creator")) throw new Error("Only the creator can invite");
+        throw error;
       }
 
       addBreadcrumb("challenge_user_invited");
@@ -524,11 +512,12 @@ export const challengeService = {
    * CONTRACT: Explicit + RLS visibility check (defense-in-depth)
    * CONTRACT: Returns empty array if caller is not accepted participant
    */
-  async getLeaderboard(challengeId: string): Promise<LeaderboardEntry[]> {
+  async getLeaderboard(challengeId: string, limit?: number): Promise<LeaderboardEntry[]> {
     challengeIdSchema.parse(challengeId);
     return withAuth(async () => {
       const { data, error } = await getSupabaseClient().rpc("get_leaderboard", {
         p_challenge_id: challengeId,
+        ...(limit != null ? { p_limit: limit } : {}),
       });
 
       if (error) throw error;

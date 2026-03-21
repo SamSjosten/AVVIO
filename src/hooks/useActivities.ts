@@ -127,6 +127,7 @@ export function toDisplayActivity(activity: ActivityLog): DisplayActivity {
     active_minutes: 1, // 1 point per minute
     workouts: 10, // 10 points per workout
     distance: 5, // 5 points per unit (mile/km)
+    calories: 0.01, // 1 point per 100 kcal
     custom: 1,
   };
 
@@ -159,6 +160,7 @@ export function getActivityTypeName(type: string): string {
     cycling: "Cycling",
     walking: "Walking",
     swimming: "Swimming",
+    calories: "Calories",
     custom: "Activity",
   };
   return names[type] || "Activity";

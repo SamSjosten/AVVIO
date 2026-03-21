@@ -97,6 +97,7 @@ export function useChallenge(challengeId: string | undefined) {
     queryKey: challengeKeys.detail(challengeId!),
     queryFn: () => challengeService.getChallenge(challengeId!),
     enabled: !!challengeId,
+    staleTime: 30_000,
   });
 }
 
@@ -125,11 +126,7 @@ export function useLeaderboard(challengeId: string | undefined, options?: UseLea
 
   return useQuery({
     queryKey: challengeKeys.leaderboard(challengeId!, limit),
-    queryFn: async () => {
-      const data = await challengeService.getLeaderboard(challengeId!);
-      // Apply client-side limit if specified
-      return limit ? data.slice(0, limit) : data;
-    },
+    queryFn: () => challengeService.getLeaderboard(challengeId!, limit),
     enabled: !!challengeId && enabled, // Gate on ID + explicit enabled flag
     staleTime: 30_000, // 30s - leaderboards change often during active challenges
   });

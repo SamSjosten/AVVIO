@@ -39,6 +39,9 @@ function FriendRow({ friend, isSelected, onToggle }: FriendRowProps) {
       activeOpacity={0.7}
       testID={TestIDs.createWizard.inviteFriendRow(friend.friend_profile.id)}
       style={[styles.friendRow, isSelected && { backgroundColor: colors.primary.subtle }]}
+      accessibilityLabel={`Select ${profile.display_name || profile.username}`}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: isSelected }}
     >
       {/* Avatar */}
       <View

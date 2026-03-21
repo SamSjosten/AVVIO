@@ -32,6 +32,7 @@ const activityColors: Record<string, { text: string; bg: string }> = {
   hiit: { text: "#F97316", bg: "#FFEDD5" },
   cycling: { text: "#06B6D4", bg: "#CFFAFE" },
   swimming: { text: "#0EA5E9", bg: "#E0F2FE" },
+  calories: { text: "#EF4444", bg: "#FEE2E2" },
   custom: { text: "#6B7280", bg: "#F3F4F6" },
 };
 
@@ -85,6 +86,7 @@ export default function ActivityDetailScreen() {
       cycling: "Cycling",
       walking: "Walking",
       swimming: "Swimming",
+      calories: "Calories",
       custom: "Activity",
     };
     return names[type] || "Activity";
@@ -100,6 +102,7 @@ export default function ActivityDetailScreen() {
       steps: 0.01,
       active_minutes: 1,
       distance: 5,
+      calories: 0.01,
     };
     return Math.round(value * (multiplier[type] || 1));
   };

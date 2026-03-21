@@ -17,6 +17,7 @@ const FilterIcons: Record<string, React.ComponentType<{ size: number; color: str
   workout_points: ({ size, color }) => <DumbbellIcon size={size} color={color} />,
   distance: ({ size, color }) => <RunningIcon size={size} color={color} />,
   active_minutes: ClockIcon,
+  calories: ClockIcon,
 };
 
 export type ChallengeFilterType =
@@ -26,7 +27,8 @@ export type ChallengeFilterType =
   | "workouts"
   | "workout_points"
   | "distance"
-  | "active_minutes";
+  | "active_minutes"
+  | "calories";
 
 export interface FilterOption {
   id: ChallengeFilterType;

@@ -635,3 +635,116 @@ describe("Challenge Visibility Integration Tests", () => {
     });
   });
 });
+
+// =============================================================================
+// ATOMIC INVITE RPC TESTS (migration 043)
+// =============================================================================
+
+describe("Atomic invite RPC", () => {
+  let user1: TestUser;
+  let user2: TestUser;
+
+  beforeAll(async () => {
+    user1 = await getTestUser1();
+    user2 = await getTestUser2();
+  }, 30000);
+
+  describe("invite_to_challenge atomicity", () => {
+    let challengeId: string | null = null;
+
+    afterEach(async () => {
+      if (challengeId) {
+        await cleanupChallenge(challengeId);
+        challengeId = null;
+      }
+    });
+
+    it("should create participant and notification atomically", async () => {
+      // Create challenge as user1
+      challengeId = await createTestChallenge(user1.client);
+
+      // Invite user2 via atomic RPC
+      const { error } = await user1.client.rpc("invite_to_challenge", {
+        p_challenge_id: challengeId,
+        p_user_id: user2.id,
+      });
+
+      expect(error).toBeNull();
+
+      // Verify participant row exists
+      const { data: participant } = await user1.client
+        .from("challenge_participants")
+        .select()
+        .eq("challenge_id", challengeId)
+        .eq("user_id", user2.id)
+        .single();
+
+      expect(participant).not.toBeNull();
+      expect(participant?.invite_status).toBe("pending");
+
+      // Verify notification row exists for user2 (use service client to bypass RLS)
+      const { createServiceClient } = await import("./setup");
+      const serviceClient = createServiceClient();
+      const { data: notifications } = await serviceClient
+        .from("notifications")
+        .select()
+        .eq("user_id", user2.id)
+        .eq("type", "challenge_invite_received");
+
+      expect(notifications).not.toBeNull();
+      const matching = notifications?.filter(
+        (n) => n.data && (n.data as Record<string, unknown>).challenge_id === challengeId,
+      );
+      expect(matching?.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("should reject over-capacity invite with challenge_full", async () => {
+      // Create challenge with max_participants = 2 (creator counts as 1)
+      challengeId = await createTestChallenge(user1.client, {
+        max_participants: 2,
+      });
+
+      // Invite user2 (fills to 2)
+      const { error: firstError } = await user1.client.rpc("invite_to_challenge", {
+        p_challenge_id: challengeId,
+        p_user_id: user2.id,
+      });
+      expect(firstError).toBeNull();
+
+      // Accept invite so both slots are used
+      await acceptChallengeInvite(user2.client, challengeId);
+
+      // Create a third user ID (non-existent but valid UUID for the test)
+      const fakeUserId = "00000000-0000-0000-0000-000000000099";
+
+      // Try to invite a third user — should fail
+      const { error } = await user1.client.rpc("invite_to_challenge", {
+        p_challenge_id: challengeId,
+        p_user_id: fakeUserId,
+      });
+
+      expect(error).not.toBeNull();
+      expect(error?.message).toContain("challenge_full");
+    });
+
+    it("should reject duplicate invite with duplicate_invite", async () => {
+      challengeId = await createTestChallenge(user1.client);
+
+      // First invite succeeds
+      const { error: firstError } = await user1.client.rpc("invite_to_challenge", {
+        p_challenge_id: challengeId,
+        p_user_id: user2.id,
+      });
+      expect(firstError).toBeNull();
+
+      // Second invite should fail
+      const { error } = await user1.client.rpc("invite_to_challenge", {
+        p_challenge_id: challengeId,
+        p_user_id: user2.id,
+      });
+
+      expect(error).not.toBeNull();
+      expect(error?.message).toContain("duplicate_invite");
+    });
+  });
+});

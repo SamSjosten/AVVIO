@@ -2,7 +2,7 @@
 // Friends management service
 
 import { getSupabaseClient, withAuth } from "@/lib/supabase";
-import { captureError, addBreadcrumb } from "@/lib/sentry";
+import { addBreadcrumb } from "@/lib/sentry";
 import {
   validate,
   sendFriendRequestSchema,
@@ -161,34 +161,16 @@ export const friendsService = {
   async sendRequest(input: unknown): Promise<void> {
     const { target_user_id } = validate(sendFriendRequestSchema, input);
 
-    return withAuth(async (userId) => {
-      if (target_user_id === userId) {
-        throw new Error("Cannot send friend request to yourself");
-      }
-
-      const { error } = await getSupabaseClient().from("friends").insert({
-        requested_by: userId,
-        requested_to: target_user_id,
-        status: "pending",
+    return withAuth(async () => {
+      // Atomic friend request + notification (single RPC transaction)
+      const { error } = await getSupabaseClient().rpc("send_friend_request", {
+        p_target_user_id: target_user_id,
       });
 
       if (error) {
-        // Handle duplicate request
-        if (error.code === "23505") {
-          throw new Error("Friend request already exists");
-        }
+        if (error.message?.includes("self_request")) throw new Error("Cannot send friend request to yourself");
+        if (error.message?.includes("already_exists")) throw new Error("Friend request already exists");
         throw error;
-      }
-
-      // Trigger notification (server-side function) — non-blocking
-      const { error: notifyError } = await getSupabaseClient().rpc(
-        "enqueue_friend_request_notification",
-        { p_recipient_user_id: target_user_id },
-      );
-
-      if (notifyError) {
-        console.error("Failed to send friend request notification:", notifyError);
-        captureError(notifyError, { context: "friend-request-notification" });
       }
 
       addBreadcrumb("friend_request_sent");

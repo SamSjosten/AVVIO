@@ -10,7 +10,7 @@
 // - Non-expandable (taps navigate to challenge)
 
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, GestureResponderEvent } from "react-native";
 import { router } from "expo-router";
 import { useAppTheme } from "@/providers/ThemeProvider";
 import { ClockIcon, UsersIcon, UserPlusIcon } from "react-native-heroicons/outline";
@@ -41,7 +41,7 @@ export function StartingSoonCard({ challenge, onInvite }: StartingSoonCardProps)
     router.push(`/challenge/${challenge.id}`);
   };
 
-  const handleInvite = (e: any) => {
+  const handleInvite = (e: GestureResponderEvent) => {
     // Prevent card navigation
     e?.stopPropagation?.();
 

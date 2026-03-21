@@ -48,7 +48,7 @@ let __mockAuthUserId: string | null = null;
 // Mock supabase module
 jest.mock("@/lib/supabase", () => {
   // Create mock client inside factory to avoid hoisting issues
-  const mockClient = { from: jest.fn() };
+  const mockClient = { from: jest.fn(), rpc: jest.fn() };
   return {
     __mockClient: mockClient, // Export for test access
     getSupabaseClient: jest.fn(() => mockClient),
@@ -68,7 +68,8 @@ jest.mock("@/lib/supabase", () => {
 // =============================================================================
 
 // Get mock client from the mocked module
-const getMockClient = () => require("@/lib/supabase").__mockClient as { from: jest.Mock };
+const getMockClient = () =>
+  require("@/lib/supabase").__mockClient as { from: jest.Mock; rpc: jest.Mock };
 
 function setAuthenticatedUser(userId: string) {
   __mockAuthUserId = userId;
@@ -91,6 +92,7 @@ describe("friendsService", () => {
     jest.clearAllMocks();
     clearAuthenticatedUser();
     getMockClient().from.mockImplementation(() => createChainMock());
+    getMockClient().rpc.mockResolvedValue({ data: null, error: null });
   });
 
   // ===========================================================================
@@ -147,7 +149,7 @@ describe("friendsService", () => {
         ).rejects.toThrow("Authentication required");
       });
 
-      it("should not call database when unauthenticated", async () => {
+      it("should not call RPC when unauthenticated", async () => {
         clearAuthenticatedUser();
         const { friendsService } = require("@/services/friends");
 
@@ -159,7 +161,7 @@ describe("friendsService", () => {
           // Expected to throw
         }
 
-        expect(getMockClient().from).not.toHaveBeenCalled();
+        expect(getMockClient().rpc).not.toHaveBeenCalled();
       });
     });
 
@@ -167,6 +169,10 @@ describe("friendsService", () => {
       it("should reject sending request to self", async () => {
         const userId = VALID_UUID;
         setAuthenticatedUser(userId);
+        getMockClient().rpc.mockResolvedValue({
+          data: null,
+          error: { message: "self_request", code: "P0001" },
+        });
         const { friendsService } = require("@/services/friends");
 
         await expect(friendsService.sendRequest({ target_user_id: userId })).rejects.toThrow(
@@ -176,17 +182,14 @@ describe("friendsService", () => {
     });
 
     describe("database interaction", () => {
-      it("should insert with correct data", async () => {
+      it("should call send_friend_request RPC with correct params", async () => {
         setAuthenticatedUser("user-123");
         const { friendsService } = require("@/services/friends");
 
         await friendsService.sendRequest({ target_user_id: VALID_TARGET_UUID });
 
-        expect(getMockClient().from).toHaveBeenCalledWith("friends");
-        expect(mockInsert).toHaveBeenCalledWith({
-          requested_by: "user-123",
-          requested_to: VALID_TARGET_UUID,
-          status: "pending",
+        expect(getMockClient().rpc).toHaveBeenCalledWith("send_friend_request", {
+          p_target_user_id: VALID_TARGET_UUID,
         });
       });
     });

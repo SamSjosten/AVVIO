@@ -74,6 +74,9 @@ export function useChallengeFilters<T extends FilterableChallenge>(
       case "active_minutes":
         filtered = filtered.filter((c) => c.challenge_type === "active_minutes");
         break;
+      case "calories":
+        filtered = filtered.filter((c) => c.challenge_type === "calories");
+        break;
       default:
         // "all" - no filter
         break;

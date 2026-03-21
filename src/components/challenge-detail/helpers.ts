@@ -117,6 +117,7 @@ export const ACTIVITY_ICONS: Record<string, string> = {
   active_minutes: "⏱️",
   workouts: "💪",
   distance: "🏃",
+  calories: "🔥",
   custom: "🎯",
 };
 

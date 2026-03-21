@@ -43,9 +43,13 @@ const createChainMock = (finalData: unknown, finalError: unknown = null) => {
 // Mock user for withAuth
 const mockUserId = "test-user-123";
 
+// Mock RPC function
+const mockRpc = jest.fn();
+
 // Mock supabase client that will be returned by getSupabaseClient()
 const mockSupabaseClient = {
   from: jest.fn(),
+  rpc: mockRpc,
 };
 
 // Mock supabase module
@@ -246,6 +250,56 @@ describe("challengeService.getPendingInvites", () => {
       expect(result).toHaveLength(1);
       expect(queriedTables).toContain("profiles_public");
       expect(result[0].creator.username).toBe("alice");
+    });
+  });
+});
+
+// =============================================================================
+// LEADERBOARD LIMIT TESTS
+// =============================================================================
+
+describe("challengeService.getLeaderboard", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockSupabaseClient.from.mockReset();
+    mockRpc.mockReset();
+  });
+
+  const testChallengeId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+
+  const mockLeaderboardData = [
+    {
+      user_id: "11111111-1111-1111-1111-111111111111",
+      current_progress: 100,
+      current_streak: 3,
+      rank: 1,
+      today_change: 50,
+      username: "alice",
+      display_name: "Alice",
+      avatar_url: null,
+    },
+  ];
+
+  it("should pass p_limit when limit is provided", async () => {
+    mockRpc.mockResolvedValue({ data: mockLeaderboardData, error: null });
+
+    const { challengeService } = require("@/services/challenges");
+    await challengeService.getLeaderboard(testChallengeId, 3);
+
+    expect(mockRpc).toHaveBeenCalledWith("get_leaderboard", {
+      p_challenge_id: testChallengeId,
+      p_limit: 3,
+    });
+  });
+
+  it("should NOT pass p_limit when limit is not provided", async () => {
+    mockRpc.mockResolvedValue({ data: mockLeaderboardData, error: null });
+
+    const { challengeService } = require("@/services/challenges");
+    await challengeService.getLeaderboard(testChallengeId);
+
+    expect(mockRpc).toHaveBeenCalledWith("get_leaderboard", {
+      p_challenge_id: testChallengeId,
     });
   });
 });

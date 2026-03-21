@@ -73,6 +73,7 @@ export const challengeTypeSchema = z.enum([
   "workouts",
   "distance",
   "custom",
+  "calories",
 ]);
 
 export const winConditionSchema = z.enum([

@@ -38,6 +38,7 @@ const challengeTypeColors: Record<string, { primary: string; secondary: string }
   workouts: { primary: "#8B5CF6", secondary: "#EDE9FE" },
   distance: { primary: "#0D9488", secondary: "#CCFBF1" },
   active_minutes: { primary: "#F97316", secondary: "#FFEDD5" },
+  calories: { primary: "#EF4444", secondary: "#FEE2E2" },
   custom: { primary: "#6B7280", secondary: "#F3F4F6" },
 };
 

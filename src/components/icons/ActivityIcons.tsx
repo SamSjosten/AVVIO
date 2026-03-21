@@ -196,6 +196,7 @@ export type ActivityType =
   | "cycling"
   | "walking"
   | "swimming"
+  | "calories"
   | "custom";
 
 export function getActivityIcon(type: ActivityType): React.ComponentType<IconProps> {
@@ -212,6 +213,7 @@ export function getActivityIcon(type: ActivityType): React.ComponentType<IconPro
     hiit: HIITIcon,
     cycling: CyclingIcon,
     swimming: SwimmingIcon,
+    calories: ActivityIcon,
     custom: ActivityIcon,
   };
 
@@ -232,5 +234,6 @@ export const activityColors: Record<ActivityType, { text: string; bg: string }> 
   hiit: { text: "#F97316", bg: "#FFEDD5" }, // Orange
   cycling: { text: "#06B6D4", bg: "#CFFAFE" }, // Cyan
   swimming: { text: "#0EA5E9", bg: "#E0F2FE" }, // Sky
+  calories: { text: "#EF4444", bg: "#FEE2E2" }, // Red
   custom: { text: "#6B7280", bg: "#F3F4F6" }, // Gray
 };

@@ -305,3 +305,88 @@ describe("Friends RLS Integration Tests", () => {
     });
   });
 });
+
+// =============================================================================
+// ATOMIC FRIEND REQUEST RPC TESTS (migration 043)
+// =============================================================================
+
+describe("Atomic friend request RPC", () => {
+  let user1: TestUser;
+  let user2: TestUser;
+
+  beforeAll(async () => {
+    user1 = await getTestUser1();
+    user2 = await getTestUser2();
+  }, 30000);
+
+  afterEach(async () => {
+    // Cleanup any friend rows between test users
+    const serviceClient = createServiceClient();
+    await serviceClient
+      .from("friends")
+      .delete()
+      .or(
+        `and(requested_by.eq.${user1.id},requested_to.eq.${user2.id}),and(requested_by.eq.${user2.id},requested_to.eq.${user1.id})`,
+      );
+    // Cleanup notifications
+    await serviceClient
+      .from("notifications")
+      .delete()
+      .eq("user_id", user2.id)
+      .eq("type", "friend_request_received");
+  });
+
+  it("should create friend row and notification atomically", async () => {
+    const { error } = await user1.client.rpc("send_friend_request", {
+      p_target_user_id: user2.id,
+    });
+
+    expect(error).toBeNull();
+
+    // Verify friend row exists
+    const { data: friends } = await user1.client
+      .from("friends")
+      .select()
+      .eq("requested_by", user1.id)
+      .eq("requested_to", user2.id);
+
+    expect(friends?.length).toBe(1);
+    expect(friends?.[0]?.status).toBe("pending");
+
+    // Verify notification exists (use service client to bypass RLS)
+    const serviceClient = createServiceClient();
+    const { data: notifications } = await serviceClient
+      .from("notifications")
+      .select()
+      .eq("user_id", user2.id)
+      .eq("type", "friend_request_received");
+
+    expect(notifications).not.toBeNull();
+    expect(notifications?.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("should reject self-request with self_request", async () => {
+    const { error } = await user1.client.rpc("send_friend_request", {
+      p_target_user_id: user1.id,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.message).toContain("self_request");
+  });
+
+  it("should reject duplicate request with already_exists", async () => {
+    // First request succeeds
+    const { error: firstError } = await user1.client.rpc("send_friend_request", {
+      p_target_user_id: user2.id,
+    });
+    expect(firstError).toBeNull();
+
+    // Second request should fail
+    const { error } = await user1.client.rpc("send_friend_request", {
+      p_target_user_id: user2.id,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.message).toContain("already_exists");
+  });
+});

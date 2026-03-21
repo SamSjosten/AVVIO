@@ -815,7 +815,7 @@ export type Database = {
         }[]
       }
       get_leaderboard: {
-        Args: { p_challenge_id: string }
+        Args: { p_challenge_id: string; p_limit?: number }
         Returns: {
           avatar_url: string
           current_progress: number
@@ -939,6 +939,10 @@ export type Database = {
         Returns: undefined
       }
       send_final_push_notifications: { Args: never; Returns: undefined }
+      send_friend_request: {
+        Args: { p_target_user_id: string }
+        Returns: undefined
+      }
       send_streak_warning_notifications: { Args: never; Returns: undefined }
       send_weekly_digest_notifications: { Args: never; Returns: undefined }
       start_health_sync: {
