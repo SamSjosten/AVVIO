@@ -248,9 +248,10 @@ export const useOfflineStore = create<OfflineStoreState & OfflineStoreActions>()
       // Actions
       addToQueue: (action, queuedByUserId) => {
         const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        const MAX_QUEUE_SIZE = 500;
 
-        set((state) => ({
-          queue: [
+        set((state) => {
+          const newQueue = [
             ...state.queue,
             {
               id,
@@ -259,8 +260,14 @@ export const useOfflineStore = create<OfflineStoreState & OfflineStoreActions>()
               retryCount: 0,
               ...(queuedByUserId ? { queuedByUserId } : {}),
             },
-          ],
-        }));
+          ];
+          // Cap queue size — drop oldest items if exceeded
+          return {
+            queue: newQueue.length > MAX_QUEUE_SIZE
+              ? newQueue.slice(newQueue.length - MAX_QUEUE_SIZE)
+              : newQueue,
+          };
+        });
 
         // GUARDRAIL 3: Telemetry for queue depth
         console.log(`[OfflineQueue] Added ${action.type}, queue depth: ${get().queue.length}`);

@@ -177,6 +177,10 @@ export function useInviteUser() {
       queryClient.invalidateQueries({
         queryKey: challengeKeys.detail(variables.challenge_id),
       });
+      // Invalidate leaderboard so new participant appears
+      queryClient.invalidateQueries({
+        queryKey: challengeKeys.leaderboardPrefix(variables.challenge_id),
+      });
     },
     onError: (error: Error) => {
       console.error("[useInviteUser] Failed:", error.message);

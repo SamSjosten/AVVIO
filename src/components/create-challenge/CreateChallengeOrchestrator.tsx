@@ -219,8 +219,7 @@ export function CreateChallengeOrchestrator() {
         startDate = new Date(now.getTime() + 60000); // +1 minute buffer
       }
 
-      const endDate = new Date(startDate.getTime());
-      endDate.setDate(endDate.getDate() + durationDays);
+      const endDate = new Date(startDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
       const typeConfig = CHALLENGE_TYPES.find((t) => t.id === challengeType);
 
@@ -254,7 +253,7 @@ export function CreateChallengeOrchestrator() {
 
       // Send invites (best-effort, don't block success)
       if (mode === "social" && selectedFriendIds.length > 0 && result?.id) {
-        await Promise.allSettled(
+        const results = await Promise.allSettled(
           selectedFriendIds.map((friendId) =>
             inviteUser.mutateAsync({
               challenge_id: result.id,
@@ -262,6 +261,16 @@ export function CreateChallengeOrchestrator() {
             }),
           ),
         );
+        const failedCount = results.filter((r) => r.status === "rejected").length;
+        if (failedCount > 0) {
+          await new Promise<void>((resolve) => {
+            Alert.alert(
+              "Challenge Created",
+              `${failedCount} of ${selectedFriendIds.length} invite${failedCount !== 1 ? "s" : ""} failed to send. You can invite them later from the challenge screen.`,
+              [{ text: "OK", onPress: () => resolve() }],
+            );
+          });
+        }
       }
 
       // Request notification permission contextually (non-blocking)
@@ -366,6 +375,8 @@ export function CreateChallengeOrchestrator() {
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={styles.backBtn}
               testID={TestIDs.createWizard.backButton}
+              accessibilityLabel={currentStep === "mode" ? "Close" : "Go back"}
+              accessibilityRole="button"
             >
               <ChevronLeftIcon size={24} color={colors.textSecondary} />
             </TouchableOpacity>
@@ -452,7 +463,9 @@ export function CreateChallengeOrchestrator() {
               disabled={isCtaDisabled}
               activeOpacity={0.8}
               testID={TestIDs.createWizard.ctaButton}
-              accessibilityState={{ disabled: isCtaDisabled }}
+              accessibilityLabel={isSubmitting ? "Creating challenge" : ctaLabel ?? undefined}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isCtaDisabled, busy: isSubmitting }}
               style={[
                 styles.ctaButton,
                 {

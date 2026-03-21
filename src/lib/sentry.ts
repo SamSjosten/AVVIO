@@ -147,6 +147,7 @@ export function initSentry(): void {
     },
   });
 
+  Sentry.addBreadcrumb({ message: "sentry_initialized", level: "info" });
   console.log("[Sentry] Initialized with mobile replay");
 }
 

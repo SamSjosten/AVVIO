@@ -578,6 +578,8 @@ export default function WelcomeScreen() {
           testID={TestIDs.welcome.getStartedButton}
           onPress={handleGetStarted}
           disabled={isExiting}
+          accessibilityLabel="Get started"
+          accessibilityRole="button"
           style={({ pressed }: { pressed: boolean }) => [
             styles.primaryButton,
             {
@@ -595,6 +597,8 @@ export default function WelcomeScreen() {
           testID={TestIDs.welcome.signInLink}
           onPress={handleSignIn}
           style={styles.signInLink}
+          accessibilityLabel="Sign in to existing account"
+          accessibilityRole="link"
         >
           <Text style={[styles.signInText, { color: colors.textMuted }]}>
             Already have an account?{" "}

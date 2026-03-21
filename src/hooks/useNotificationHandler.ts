@@ -91,8 +91,10 @@ export function getResponseKey(
  *
  * @param isHydrated - Pass `true` once auth loading is complete (!isLoading).
  *   When false, intents are buffered and flushed on hydration.
+ * @param hasSession - Pass `true` when an authenticated session exists.
+ *   Prevents routing when hydration completes without auth (logged-out state).
  */
-export function useNotificationHandler(isHydrated: boolean) {
+export function useNotificationHandler(isHydrated: boolean, hasSession: boolean) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const responseListener = useRef<Notifications.Subscription | null>(null);
@@ -135,13 +137,21 @@ export function useNotificationHandler(isHydrated: boolean) {
     }
   }
 
-  // Flush buffered intent once hydrated (cold-start path)
+  // Flush buffered intent once hydrated AND authenticated (cold-start path)
   useEffect(() => {
-    if (isHydrated && pendingResponse.current) {
+    if (isHydrated && hasSession && pendingResponse.current) {
       routeFromResponse(pendingResponse.current, true);
       pendingResponse.current = null;
     }
-  }, [isHydrated]);
+  }, [isHydrated, hasSession]);
+
+  // Clear buffered intent if hydration completes without a session
+  // Prevents stale replay if a different user logs in later
+  useEffect(() => {
+    if (isHydrated && !hasSession) {
+      pendingResponse.current = null;
+    }
+  }, [isHydrated, hasSession]);
 
   useEffect(() => {
     let cancelled = false;
@@ -151,7 +161,7 @@ export function useNotificationHandler(isHydrated: boolean) {
       isColdStart = false,
     ) {
       if (cancelled) return;
-      if (!isHydrated) {
+      if (!isHydrated || !hasSession) {
         pendingResponse.current = response;
         return;
       }
@@ -179,5 +189,5 @@ export function useNotificationHandler(isHydrated: boolean) {
       cancelled = true;
       responseListener.current?.remove();
     };
-  }, [router, isHydrated, queryClient]);
+  }, [router, isHydrated, hasSession, queryClient]);
 }

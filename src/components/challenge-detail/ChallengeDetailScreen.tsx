@@ -42,7 +42,8 @@ import { useLeaderboardSubscription } from "@/hooks/useRealtimeSubscription";
 import { LoadingState, ErrorState } from "@/components/shared";
 import { useAppTheme } from "@/providers/ThemeProvider";
 import { getEffectiveStatus, canLogActivity } from "@/lib/challengeStatus";
-import { getServerNow, syncServerTime, getDaysRemaining } from "@/lib/serverTime";
+import { syncServerTime, getDaysRemaining } from "@/lib/serverTime";
+import { useServerNow } from "@/hooks/useServerNow";
 import { extractErrorMessage } from "@/lib/extractErrorMessage";
 import { TestIDs } from "@/constants/testIDs";
 import { ChevronLeftIcon, EllipsisVerticalIcon } from "react-native-heroicons/outline";
@@ -124,7 +125,7 @@ export function ChallengeDetailScreen({ challengeId }: ChallengeDetailScreenProp
   // FIRST-CLASS CONCERNS — computed once, threaded everywhere
   // =========================================================================
 
-  const serverNow = getServerNow();
+  const serverNow = useServerNow();
 
   // Viewer role
   const viewerRole: ViewerRole | null = useMemo(() => {
@@ -197,7 +198,7 @@ export function ChallengeDetailScreen({ challengeId }: ChallengeDetailScreenProp
   // =========================================================================
 
   const handleLogActivity = async (value: number) => {
-    if (!challenge) return;
+    if (!challenge || logActivity.isPending) return;
     const client_event_id = generateClientEventId();
     try {
       await logActivity.mutateAsync({
@@ -213,7 +214,7 @@ export function ChallengeDetailScreen({ challengeId }: ChallengeDetailScreenProp
   };
 
   const handleLogWorkout = async (workoutType: string, durationMinutes: number) => {
-    if (!challenge) return;
+    if (!challenge || logWorkout.isPending) return;
     const client_event_id = generateClientEventId();
     try {
       const result = await logWorkout.mutateAsync({

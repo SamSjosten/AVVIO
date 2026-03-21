@@ -239,6 +239,11 @@ export const challengeService = {
       if (error.message?.includes("start_date_in_past")) {
         throw new Error("Start date must be in the future");
       }
+      if (error.message?.includes("challenge_limit_reached")) {
+        throw new Error(
+          "You've reached the maximum number of active challenges. Complete or leave some before creating new ones.",
+        );
+      }
       throw error;
     }
 

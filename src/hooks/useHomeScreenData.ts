@@ -26,7 +26,7 @@ import { useRecentActivities, toDisplayActivity } from "@/hooks/useActivities";
 import { useUnreadNotificationCount } from "@/hooks/useNotifications";
 import { useAuth } from "@/providers/AuthProvider";
 import { pushTokenService } from "@/services/pushTokens";
-import { getServerNow } from "@/lib/serverTime";
+import { useServerNow } from "@/hooks/useServerNow";
 import { getEffectiveStatus } from "@/lib/challengeStatus";
 import type { ChallengeWithParticipation } from "@/services/challenges";
 
@@ -71,14 +71,12 @@ export interface HomeScreenData {
 export function splitChallengesByStatus(
   challenges: ChallengeWithParticipation[] | undefined,
   userId: string | undefined,
+  now: Date,
 ): {
   inProgress: ChallengeWithParticipation[] | undefined;
   startingSoon: ChallengeWithParticipation[] | undefined;
 } {
   if (!challenges) return { inProgress: undefined, startingSoon: undefined };
-
-  // Use server-synchronized time (not raw client time)
-  const now = getServerNow();
 
   const inProgress: ChallengeWithParticipation[] = [];
   const startingSoon: ChallengeWithParticipation[] = [];
@@ -121,11 +119,15 @@ export function useHomeScreenData(): HomeScreenData {
     refetch: refetchActive,
   } = useActiveChallenges();
 
+  // Ticking server time — re-evaluates every 60s so challenge bucketing
+  // updates while the app stays open across start/end boundaries
+  const now = useServerNow(60_000);
+
   // Derive startingSoon and inProgress from the single query
   // Uses server-managed status column (not client time) to avoid drift issues
   const { inProgress: activeChallenges, startingSoon: startingSoonChallenges } = useMemo(
-    () => splitChallengesByStatus(allActiveChallenges, user?.id),
-    [allActiveChallenges, user?.id],
+    () => splitChallengesByStatus(allActiveChallenges, user?.id, now),
+    [allActiveChallenges, user?.id, now],
   );
 
   const {

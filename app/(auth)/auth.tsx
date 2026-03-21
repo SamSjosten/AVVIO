@@ -435,6 +435,9 @@ export default function AuthScreenV2() {
                 testID={TestIDs.auth.signupModeButton}
                 style={[styles.modeButton, form.mode === "signup" && styles.modeButtonActive]}
                 onPress={() => form.switchMode("signup")}
+                accessibilityLabel="Create account"
+                accessibilityRole="button"
+                accessibilityState={{ selected: form.mode === "signup" }}
               >
                 <Text
                   style={[
@@ -449,6 +452,9 @@ export default function AuthScreenV2() {
                 testID={TestIDs.auth.signinModeButton}
                 style={[styles.modeButton, form.mode === "signin" && styles.modeButtonActive]}
                 onPress={() => form.switchMode("signin")}
+                accessibilityLabel="Sign in"
+                accessibilityRole="button"
+                accessibilityState={{ selected: form.mode === "signin" }}
               >
                 <Text
                   style={[
@@ -549,6 +555,9 @@ export default function AuthScreenV2() {
               style={[styles.submitButton, form.isLoading && styles.submitButtonDisabled]}
               onPress={handleSubmit}
               disabled={form.isLoading}
+              accessibilityLabel={form.mode === "signup" ? "Create account" : "Sign in"}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: form.isLoading, busy: form.isLoading }}
             >
               {form.isLoading ? (
                 <ActivityIndicator color="#FFFFFF" />

@@ -187,8 +187,8 @@ function RootLayoutNav() {
     setupNotificationChannel();
   }, []);
 
-  // Handle notification taps for deep linking (gated on auth hydration)
-  useNotificationHandler(!isLoading);
+  // Handle notification taps for deep linking (gated on auth hydration + session)
+  useNotificationHandler(!isLoading, !!session?.user?.id);
 
   // Show loading spinner ONLY if not navigation-locked
   // When locked, auth screen is handling sign-in and needs to stay mounted
