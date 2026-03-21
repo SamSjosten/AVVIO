@@ -119,8 +119,8 @@ export function initSentry(): void {
     // Set environment
     environment: "production",
 
-    // Sample rate for performance monitoring (disabled for now)
-    tracesSampleRate: 0,
+    // Sample rate for performance monitoring
+    tracesSampleRate: 0.1,
 
     // Mobile replay — only in production with a DSN
     replaysSessionSampleRate: 0.1,
