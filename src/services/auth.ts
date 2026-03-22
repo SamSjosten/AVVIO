@@ -289,22 +289,25 @@ export const authService = {
 
   /**
    * Update the current user's profile
-   * CONTRACT: Only self-update allowed via RLS
+   * CONTRACT: Self-update via update_profile RPC
    */
   async updateProfile(input: unknown): Promise<Profile> {
     const validated = validate(updateProfileSchema, input);
 
-    return withAuth(async (userId) => {
-      const { data, error } = await getSupabaseClient()
-        .from("profiles")
-        .update(validated)
-        .eq("id", userId)
-        .select()
-        .single();
+    return withAuth(async () => {
+      const { data, error } = await getSupabaseClient().rpc("update_profile", {
+        p_username: validated.username ?? null,
+        p_display_name: validated.display_name ?? null,
+        // avatar_url undefined = leave unchanged (pass null to RPC)
+        // avatar_url null = clear avatar (pass '' so RPC btrim converts to NULL)
+        p_avatar_url: validated.avatar_url !== undefined ? (validated.avatar_url ?? "") : null,
+      });
 
       if (error) throw error;
       if (!data) throw new Error("Profile not found");
-      return data;
+      // RPC returns a single profile row
+      const profile = Array.isArray(data) ? data[0] : data;
+      return profile as Profile;
     });
   },
 
@@ -461,14 +464,11 @@ export const authService = {
 
   /**
    * Mark health setup as completed in user profile.
-   * CONTRACT: Profile writes go through service layer (Rule 20).
+   * CONTRACT: Profile writes go through RPC (Rule 20).
    */
   async markHealthSetupComplete(): Promise<void> {
-    return withAuth(async (userId) => {
-      const { error } = await getSupabaseClient()
-        .from("profiles")
-        .update({ health_setup_completed_at: new Date().toISOString() })
-        .eq("id", userId);
+    return withAuth(async () => {
+      const { error } = await getSupabaseClient().rpc("mark_health_setup_complete");
 
       if (error) throw error;
     });

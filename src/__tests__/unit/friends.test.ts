@@ -257,15 +257,15 @@ describe("friendsService", () => {
     });
 
     describe("database interaction", () => {
-      it("should update status to accepted", async () => {
+      it("should call accept_friend_request RPC", async () => {
         setAuthenticatedUser("user-123");
         const { friendsService } = require("@/services/friends");
 
         await friendsService.acceptRequest({ friendship_id: VALID_UUID });
 
-        expect(getMockClient().from).toHaveBeenCalledWith("friends");
-        expect(mockUpdate).toHaveBeenCalledWith({ status: "accepted" });
-        expect(mockEq).toHaveBeenCalledWith("id", VALID_UUID);
+        expect(getMockClient().rpc).toHaveBeenCalledWith("accept_friend_request", {
+          p_friendship_id: VALID_UUID,
+        });
       });
     });
   });
@@ -339,15 +339,15 @@ describe("friendsService", () => {
     });
 
     describe("database interaction", () => {
-      it("should delete the friendship row", async () => {
+      it("should call decline_friend_request RPC", async () => {
         setAuthenticatedUser("user-123");
         const { friendsService } = require("@/services/friends");
 
         await friendsService.declineRequest({ friendship_id: VALID_UUID });
 
-        expect(getMockClient().from).toHaveBeenCalledWith("friends");
-        expect(mockDelete).toHaveBeenCalled();
-        expect(mockEq).toHaveBeenCalledWith("id", VALID_UUID);
+        expect(getMockClient().rpc).toHaveBeenCalledWith("decline_friend_request", {
+          p_friendship_id: VALID_UUID,
+        });
       });
     });
   });
@@ -414,15 +414,15 @@ describe("friendsService", () => {
     });
 
     describe("database interaction", () => {
-      it("should delete the friendship row", async () => {
+      it("should call remove_friend RPC", async () => {
         setAuthenticatedUser("user-123");
         const { friendsService } = require("@/services/friends");
 
         await friendsService.removeFriend({ friendship_id: VALID_UUID });
 
-        expect(getMockClient().from).toHaveBeenCalledWith("friends");
-        expect(mockDelete).toHaveBeenCalled();
-        expect(mockEq).toHaveBeenCalledWith("id", VALID_UUID);
+        expect(getMockClient().rpc).toHaveBeenCalledWith("remove_friend", {
+          p_friendship_id: VALID_UUID,
+        });
       });
     });
   });

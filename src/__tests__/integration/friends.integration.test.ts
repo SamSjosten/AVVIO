@@ -390,3 +390,176 @@ describe("Atomic friend request RPC", () => {
     expect(error?.message).toContain("already_exists");
   });
 });
+
+// =============================================================================
+// FRIEND ACTION RPC TESTS (migration 045)
+// =============================================================================
+
+describe("Friend action RPCs", () => {
+  let user1: TestUser;
+  let user2: TestUser;
+
+  beforeAll(async () => {
+    user1 = await getTestUser1();
+    user2 = await getTestUser2();
+  }, 30000);
+
+  afterEach(async () => {
+    const serviceClient = createServiceClient();
+    await serviceClient
+      .from("friends")
+      .delete()
+      .or(
+        `and(requested_by.eq.${user1.id},requested_to.eq.${user2.id}),and(requested_by.eq.${user2.id},requested_to.eq.${user1.id})`,
+      );
+    await serviceClient
+      .from("notifications")
+      .delete()
+      .eq("user_id", user2.id)
+      .eq("type", "friend_request_received");
+  });
+
+  it("accept_friend_request sets status to accepted and marks notification read", async () => {
+    // Setup: create pending request via RPC
+    const { error: sendError } = await user1.client.rpc("send_friend_request", {
+      p_target_user_id: user2.id,
+    });
+    expect(sendError).toBeNull();
+
+    // Get friendship ID
+    const { data: friendRows } = await user2.client
+      .from("friends")
+      .select("id")
+      .eq("requested_by", user1.id)
+      .eq("requested_to", user2.id)
+      .single();
+    expect(friendRows).not.toBeNull();
+
+    // Accept via RPC
+    const { error: acceptError } = await user2.client.rpc("accept_friend_request", {
+      p_friendship_id: friendRows!.id,
+    });
+    expect(acceptError).toBeNull();
+
+    // Verify status
+    const { data: accepted } = await user2.client
+      .from("friends")
+      .select("status")
+      .eq("id", friendRows!.id)
+      .single();
+    expect(accepted?.status).toBe("accepted");
+
+    // Verify trigger-driven notification cleanup: friend_request_received should be marked read
+    const serviceClient = createServiceClient();
+    const { data: notifications } = await serviceClient
+      .from("notifications")
+      .select("read_at, type")
+      .eq("user_id", user2.id)
+      .eq("type", "friend_request_received");
+    expect(notifications).not.toBeNull();
+    const matchingNotif = notifications?.find((n: any) => n.type === "friend_request_received");
+    expect(matchingNotif).toBeDefined();
+    expect(matchingNotif!.read_at).not.toBeNull();
+  });
+
+  it("decline_friend_request removes the row and marks notification read", async () => {
+    const { error: sendError } = await user1.client.rpc("send_friend_request", {
+      p_target_user_id: user2.id,
+    });
+    expect(sendError).toBeNull();
+
+    const { data: friendRows } = await user2.client
+      .from("friends")
+      .select("id")
+      .eq("requested_by", user1.id)
+      .eq("requested_to", user2.id)
+      .single();
+    expect(friendRows).not.toBeNull();
+
+    // Verify notification exists before decline
+    const serviceClient = createServiceClient();
+    const { data: preNotifs } = await serviceClient
+      .from("notifications")
+      .select("id, read_at")
+      .eq("user_id", user2.id)
+      .eq("type", "friend_request_received");
+    const preNotif = preNotifs?.find((n: any) => n.read_at === null);
+    expect(preNotif).toBeDefined();
+
+    const { error: declineError } = await user2.client.rpc("decline_friend_request", {
+      p_friendship_id: friendRows!.id,
+    });
+    expect(declineError).toBeNull();
+
+    // Verify deleted
+    const { data: gone } = await user2.client
+      .from("friends")
+      .select("id")
+      .eq("id", friendRows!.id)
+      .maybeSingle();
+    expect(gone).toBeNull();
+
+    // Verify notification marked read by trigger
+    const { data: postNotifs } = await serviceClient
+      .from("notifications")
+      .select("read_at")
+      .eq("id", preNotif!.id)
+      .single();
+    expect(postNotifs?.read_at).not.toBeNull();
+  });
+
+  it("remove_friend deletes accepted friendship", async () => {
+    // Setup: create and accept
+    const { error: sendError } = await user1.client.rpc("send_friend_request", {
+      p_target_user_id: user2.id,
+    });
+    expect(sendError).toBeNull();
+
+    const { data: friendRows } = await user2.client
+      .from("friends")
+      .select("id")
+      .eq("requested_by", user1.id)
+      .eq("requested_to", user2.id)
+      .single();
+
+    await user2.client.rpc("accept_friend_request", {
+      p_friendship_id: friendRows!.id,
+    });
+
+    // Remove via RPC (user1 = requester can remove)
+    const { error: removeError } = await user1.client.rpc("remove_friend", {
+      p_friendship_id: friendRows!.id,
+    });
+    expect(removeError).toBeNull();
+
+    // Verify gone
+    const { data: gone } = await user1.client
+      .from("friends")
+      .select("id")
+      .eq("id", friendRows!.id)
+      .maybeSingle();
+    expect(gone).toBeNull();
+  });
+
+  it("non-recipient cannot accept friend request", async () => {
+    const { error: sendError } = await user1.client.rpc("send_friend_request", {
+      p_target_user_id: user2.id,
+    });
+    expect(sendError).toBeNull();
+
+    const serviceClient = createServiceClient();
+    const { data: friendRows } = await serviceClient
+      .from("friends")
+      .select("id")
+      .eq("requested_by", user1.id)
+      .eq("requested_to", user2.id)
+      .single();
+
+    // User1 (requester) tries to accept — should fail
+    const { error: acceptError } = await user1.client.rpc("accept_friend_request", {
+      p_friendship_id: friendRows!.id,
+    });
+    expect(acceptError).not.toBeNull();
+    expect(acceptError?.message).toContain("friend_request_not_found");
+  });
+});

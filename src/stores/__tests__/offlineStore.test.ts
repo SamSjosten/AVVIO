@@ -312,6 +312,7 @@ describe("Offline Store", () => {
         processed: 0,
         succeeded: 0,
         failed: 0,
+        expired: 0,
         remaining: 0,
       });
     });

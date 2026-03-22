@@ -179,16 +179,15 @@ export const friendsService = {
 
   /**
    * Accept a friend request
-   * CONTRACT: Only recipient can accept (RLS enforced)
+   * CONTRACT: Only recipient can accept (enforced by accept_friend_request RPC)
    */
   async acceptRequest(input: unknown): Promise<void> {
     const { friendship_id } = validate(acceptFriendRequestSchema, input);
 
     return withAuth(async () => {
-      const { error } = await getSupabaseClient()
-        .from("friends")
-        .update({ status: "accepted" })
-        .eq("id", friendship_id);
+      const { error } = await getSupabaseClient().rpc("accept_friend_request", {
+        p_friendship_id: friendship_id,
+      });
 
       if (error) throw error;
 
@@ -198,13 +197,15 @@ export const friendsService = {
 
   /**
    * Decline a friend request
-   * CONTRACT: Only recipient can decline (RLS enforced)
+   * CONTRACT: Only recipient can decline (enforced by decline_friend_request RPC)
    */
   async declineRequest(input: unknown): Promise<void> {
     const { friendship_id } = validate(declineFriendRequestSchema, input);
 
     return withAuth(async () => {
-      const { error } = await getSupabaseClient().from("friends").delete().eq("id", friendship_id);
+      const { error } = await getSupabaseClient().rpc("decline_friend_request", {
+        p_friendship_id: friendship_id,
+      });
 
       if (error) throw error;
     });
@@ -212,13 +213,15 @@ export const friendsService = {
 
   /**
    * Remove a friendship
-   * CONTRACT: Either party can delete (RLS enforced)
+   * CONTRACT: Either party can remove (enforced by remove_friend RPC)
    */
   async removeFriend(input: unknown): Promise<void> {
     const { friendship_id } = validate(removeFriendSchema, input);
 
     return withAuth(async () => {
-      const { error } = await getSupabaseClient().from("friends").delete().eq("id", friendship_id);
+      const { error } = await getSupabaseClient().rpc("remove_friend", {
+        p_friendship_id: friendship_id,
+      });
 
       if (error) throw error;
     });

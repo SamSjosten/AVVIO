@@ -94,6 +94,47 @@ describe("Profile Privacy RLS Integration Tests", () => {
       await user1.client.from("profiles").update({ display_name: originalName }).eq("id", user1.id);
     });
 
+    it("update_profile RPC updates self and syncs to profiles_public", async () => {
+      // Capture original value for restore
+      const { data: original } = await user1.client
+        .from("profiles")
+        .select("display_name")
+        .eq("id", user1.id)
+        .single();
+      const originalName = original?.display_name;
+
+      const testName = `RPCUpdate_${Date.now()}`;
+
+      const { data, error } = await user1.client.rpc("update_profile", {
+        p_display_name: testName,
+      });
+
+      expect(error).toBeNull();
+      expect(data).toBeDefined();
+      // RPC returns the updated profile row
+      // Handle both single-row and array responses
+      const profile = Array.isArray(data) ? data[0] : data;
+      expect(profile?.display_name).toBe(testName);
+
+      // Verify synced to profiles_public
+      const { data: publicProfile } = await user2.client
+        .from("profiles_public")
+        .select("display_name")
+        .eq("id", user1.id)
+        .single();
+
+      expect(publicProfile?.display_name).toBe(testName);
+
+      // Restore original value if it was non-null.
+      // When originalName is null, the RPC contract (NULL = leave unchanged) cannot clear it back,
+      // so we skip restore and rely on afterEach/afterAll cleanup if needed.
+      if (originalName !== null && originalName !== undefined) {
+        await user1.client.rpc("update_profile", {
+          p_display_name: originalName,
+        });
+      }
+    });
+
     it("should NOT allow user to UPDATE another user's profile", async () => {
       const { data } = await user2.client
         .from("profiles")

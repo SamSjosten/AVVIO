@@ -60,9 +60,9 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Avvio reads your health data to track fitness challenges with friends.",
-          "NSHealthUpdateUsageDescription": false,
-          "background": false
+          "NSHealthShareUsageDescription": "FitChallenge syncs your activity data to track challenge progress",
+          "NSHealthUpdateUsageDescription": "FitChallenge records your challenge activities",
+          "background": true
         }
       ],
       [

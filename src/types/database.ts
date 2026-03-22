@@ -1,3 +1,4 @@
+Initialising login role...
 export type Json =
   | string
   | number
@@ -11,6 +12,31 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.1"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -688,14 +714,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_friend_request: {
+        Args: { p_friendship_id: string }
+        Returns: undefined
+      }
       archive_notification: {
         Args: { p_notification_id: string }
         Returns: undefined
       }
-      cancel_challenge: {
-        Args: { p_challenge_id: string }
-        Returns: undefined
-      }
+      cancel_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       challenge_effective_status: {
         Args: { p_challenge_id: string }
         Returns: string
@@ -707,6 +734,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: boolean
+      }
+      decline_friend_request: {
+        Args: { p_friendship_id: string }
+        Returns: undefined
       }
       complete_health_sync: {
         Args: {
@@ -862,8 +893,8 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number }
         Returns: {
           activity_type: Database["public"]["Enums"]["challenge_type"]
-          challenge_id: string | null
-          challenge_title: string | null
+          challenge_id: string
+          challenge_title: string
           id: string
           recorded_at: string
           source: string
@@ -910,6 +941,7 @@ export type Database = {
         }
         Returns: number
       }
+      mark_health_setup_complete: { Args: Record<string, never>; Returns: undefined }
       mark_all_notifications_read: { Args: never; Returns: undefined }
       mark_notification_read: {
         Args: { p_notification_id: string }
@@ -917,6 +949,10 @@ export type Database = {
       }
       process_scheduled_notifications: { Args: never; Returns: undefined }
       purge_old_notifications: { Args: never; Returns: number }
+      remove_friend: {
+        Args: { p_friendship_id: string }
+        Returns: undefined
+      }
       record_audit: {
         Args: { p_action: string; p_details?: Json; p_user_id: string }
         Returns: undefined
@@ -950,6 +986,31 @@ export type Database = {
         Returns: string
       }
       update_challenge_statuses: { Args: never; Returns: undefined }
+      update_profile: {
+        Args: {
+          p_username?: string
+          p_display_name?: string
+          p_avatar_url?: string
+        }
+        Returns: {
+          avatar_url: string | null
+          created_at: string | null
+          current_streak: number | null
+          display_name: string | null
+          health_setup_completed_at: string | null
+          id: string
+          is_premium: boolean | null
+          last_activity_date: string | null
+          last_digest_sent_at: string | null
+          longest_streak: number | null
+          preferred_language: string | null
+          streak_warning_sent_date: string | null
+          timezone: string | null
+          updated_at: string | null
+          username: string
+          xp_total: number | null
+        }
+      }
       update_health_last_sync: {
         Args: { p_provider: string }
         Returns: undefined
@@ -1100,6 +1161,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       challenge_status: [

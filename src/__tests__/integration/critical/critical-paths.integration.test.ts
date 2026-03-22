@@ -441,3 +441,93 @@ describe("Critical Path Integration Tests", () => {
     });
   });
 });
+
+// =============================================================================
+// 5. LEADERBOARD FLOW — activity → leaderboard reflection
+// =============================================================================
+
+describe("Leaderboard flow — activity → leaderboard reflection", () => {
+  let user1: TestUser;
+  let user2: TestUser;
+  let lbChallengeId: string | null = null;
+
+  beforeAll(async () => {
+    user1 = await getTestUser1();
+    user2 = await getTestUser2();
+
+    // Create a fresh challenge with active time bounds
+    const now = new Date();
+    const challenge = await createTestChallenge(user1.client, {
+      start_date: new Date(now.getTime() - 60 * 60 * 1000).toISOString(),
+      end_date: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+    lbChallengeId = challenge.id;
+
+    // Add user1 as accepted participant (creator)
+    const { error: p1Error } = await user1.client.from("challenge_participants").insert({
+      challenge_id: lbChallengeId,
+      user_id: user1.id,
+      invite_status: "accepted",
+    });
+    if (p1Error && p1Error.code !== "23505") throw p1Error;
+
+    // Invite and accept user2
+    await inviteToChallenge(user1.client, lbChallengeId, user2.id);
+    await acceptChallengeInvite(user2.client, lbChallengeId);
+  }, 30000);
+
+  afterAll(async () => {
+    if (lbChallengeId) {
+      await cleanupChallenge(lbChallengeId);
+    }
+  });
+
+  it("log_activity updates are reflected in get_leaderboard", async () => {
+    const id = lbChallengeId!;
+
+    // Log activity for user1
+    const { error: log1Error } = await user1.client.rpc("log_activity", {
+      p_challenge_id: id,
+      p_activity_type: "steps",
+      p_value: 8000,
+      p_source: "manual",
+      p_client_event_id: generateTestUUID(),
+    });
+    expect(log1Error).toBeNull();
+
+    // Log activity for user2 (less than user1)
+    const { error: log2Error } = await user2.client.rpc("log_activity", {
+      p_challenge_id: id,
+      p_activity_type: "steps",
+      p_value: 5000,
+      p_source: "manual",
+      p_client_event_id: generateTestUUID(),
+    });
+    expect(log2Error).toBeNull();
+
+    // Fetch leaderboard
+    const { data: leaderboard, error: lbError } = await user1.client.rpc("get_leaderboard", {
+      p_challenge_id: id,
+    });
+    expect(lbError).toBeNull();
+    expect(leaderboard).toBeDefined();
+    expect(leaderboard!.length).toBe(2);
+
+    // Find both users
+    const u1Entry = leaderboard!.find((e: any) => e.user_id === user1.id);
+    const u2Entry = leaderboard!.find((e: any) => e.user_id === user2.id);
+    expect(u1Entry).toBeDefined();
+    expect(u2Entry).toBeDefined();
+
+    // Progress matches logged totals
+    expect(u1Entry!.current_progress).toBe(8000);
+    expect(u2Entry!.current_progress).toBe(5000);
+
+    // User1 logged more → better (lower) rank
+    expect(u1Entry!.rank).toBeLessThan(u2Entry!.rank);
+
+    // today_change reflects same-day totals
+    expect(u1Entry!.today_change).toBe(8000);
+    expect(u2Entry!.today_change).toBe(5000);
+  });
+});

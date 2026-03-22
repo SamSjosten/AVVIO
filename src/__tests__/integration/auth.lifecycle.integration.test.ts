@@ -91,4 +91,20 @@ describe("Auth lifecycle", () => {
       expect(error.message).toMatch(/auth|session|PGRST30[12]/i);
     }
   });
+
+  it("session refresh preserves authenticated access", async () => {
+    // Re-sign in (previous test signed out)
+    await client.auth.signInWithPassword({ email, password });
+
+    // Force session refresh
+    const { data: refreshData, error: refreshError } = await client.auth.refreshSession();
+    expect(refreshError).toBeNull();
+    expect(refreshData.session).not.toBeNull();
+
+    // Verify authenticated RPC still works with refreshed session
+    const { data, error } = await client.rpc("get_server_time");
+
+    expect(error).toBeNull();
+    expect(data).toBeDefined();
+  });
 });

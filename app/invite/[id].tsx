@@ -194,12 +194,22 @@ export default function InviteDetailScreen() {
           style={styles.hero}
         >
           {/* Back button */}
-          <TouchableOpacity onPress={() => router.back()} style={styles.heroBackButton}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.heroBackButton}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
             <ChevronLeftIcon size={24} color="#FFFFFF" />
           </TouchableOpacity>
 
           {/* Share button */}
-          <TouchableOpacity onPress={handleShare} style={styles.heroShareButton}>
+          <TouchableOpacity
+            onPress={handleShare}
+            style={styles.heroShareButton}
+            accessibilityRole="button"
+            accessibilityLabel="Share challenge invite"
+          >
             <ShareIcon size={24} color="#FFFFFF" />
           </TouchableOpacity>
 
@@ -374,6 +384,9 @@ export default function InviteDetailScreen() {
         <TouchableOpacity
           onPress={handleDecline}
           disabled={isDeclining || isAccepting}
+          accessibilityRole="button"
+          accessibilityLabel="Decline challenge invite"
+          accessibilityState={{ disabled: isDeclining || isAccepting, busy: isDeclining }}
           style={[
             styles.declineButton,
             {
@@ -393,6 +406,9 @@ export default function InviteDetailScreen() {
         <TouchableOpacity
           onPress={handleAccept}
           disabled={isAccepting || isDeclining}
+          accessibilityRole="button"
+          accessibilityLabel="Accept challenge invite"
+          accessibilityState={{ disabled: isAccepting || isDeclining, busy: isAccepting }}
           style={[
             styles.acceptButton,
             {
