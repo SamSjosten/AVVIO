@@ -1,4 +1,3 @@
-Initialising login role...
 export type Json =
   | string
   | number
@@ -988,9 +987,9 @@ export type Database = {
       update_challenge_statuses: { Args: never; Returns: undefined }
       update_profile: {
         Args: {
-          p_username?: string
-          p_display_name?: string
-          p_avatar_url?: string
+          p_username?: string | null
+          p_display_name?: string | null
+          p_avatar_url?: string | null
         }
         Returns: {
           avatar_url: string | null
