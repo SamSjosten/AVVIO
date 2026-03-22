@@ -30,6 +30,9 @@ module.exports = {
       },
       moduleNameMapper: {
         "^@/(.*)$": "<rootDir>/src/$1",
+        "^react-native-url-polyfill/auto$": "<rootDir>/jest.emptyModule.js",
+        "^@sentry/react-native$": "<rootDir>/jest.emptyModule.js",
+        "^@react-native-community/netinfo$": "<rootDir>/jest.emptyModule.js",
       },
       // Only match integration tests
       testMatch: ["<rootDir>/src/**/__tests__/**/*.integration.test.ts"],

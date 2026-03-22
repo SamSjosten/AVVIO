@@ -1194,4 +1194,156 @@ describe("Activity Integration Tests", () => {
       }
     });
   });
+
+  // ===========================================================================
+  // log_health_activity RPC — active-window enforcement (migration 046)
+  //
+  // Unskip after deploying migration 046 to the test instance:
+  //   npx supabase db push
+  // ===========================================================================
+  describe.skip("log_health_activity RPC — active-window gate", () => {
+    it("should record activity_log but NOT increment progress for completed challenge", async () => {
+      // Create a challenge with PAST time bounds (completed)
+      const pastStart = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(); // -14d
+      const pastEnd = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(); // -7d
+      const challenge = await createTestChallenge(user1.client, {
+        start_date: pastStart,
+        end_date: pastEnd,
+      });
+      const challengeId = requireId(challenge.id);
+
+      try {
+        // Ensure participant row exists
+        await user1.client.from("challenge_participants").insert({
+          challenge_id: challengeId,
+          user_id: user1.id,
+          invite_status: "accepted",
+        });
+
+        // Record initial progress
+        const { data: beforeRows } = await user1.client
+          .from("challenge_participants")
+          .select("current_progress")
+          .eq("challenge_id", challengeId)
+          .eq("user_id", user1.id)
+          .single();
+
+        const progressBefore = beforeRows?.current_progress ?? 0;
+
+        const sourceExternalId = generateTestUUID();
+        // recorded_at is within the past challenge window
+        const recordedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(); // -10d
+
+        const { data, error } = await user1.client.rpc("log_health_activity", {
+          p_activities: JSON.stringify([
+            {
+              challenge_id: challengeId,
+              activity_type: "steps",
+              value: 3000,
+              source_external_id: sourceExternalId,
+              recorded_at: recordedAt,
+              source: "healthkit",
+            },
+          ]),
+        });
+
+        expect(error).toBeNull();
+
+        // Parse the RPC response
+        const result = typeof data === "string" ? JSON.parse(data) : data;
+        expect(result.inserted).toBe(1);
+
+        // Verify: activity_log row WAS created (health data always recorded)
+        const { data: logRows } = await user1.client
+          .from("activity_logs")
+          .select("id, value")
+          .eq("challenge_id", challengeId)
+          .eq("source_external_id", sourceExternalId);
+
+        expect(logRows?.length).toBe(1);
+        expect(logRows?.[0]?.value).toBe(3000);
+
+        // Verify: current_progress was NOT incremented (challenge is completed)
+        const { data: afterRows } = await user1.client
+          .from("challenge_participants")
+          .select("current_progress")
+          .eq("challenge_id", challengeId)
+          .eq("user_id", user1.id)
+          .single();
+
+        expect(afterRows?.current_progress).toBe(progressBefore);
+      } finally {
+        await cleanupChallenge(challengeId);
+      }
+    });
+
+    it("should record activity_log AND increment progress for active challenge", async () => {
+      // Create a challenge with ACTIVE time bounds
+      const timeBounds = getActiveTimeBounds();
+      const challenge = await createTestChallenge(user1.client, {
+        ...timeBounds,
+      });
+      const challengeId = requireId(challenge.id);
+
+      try {
+        await user1.client.from("challenge_participants").insert({
+          challenge_id: challengeId,
+          user_id: user1.id,
+          invite_status: "accepted",
+        });
+
+        const { data: beforeRows } = await user1.client
+          .from("challenge_participants")
+          .select("current_progress")
+          .eq("challenge_id", challengeId)
+          .eq("user_id", user1.id)
+          .single();
+
+        const progressBefore = beforeRows?.current_progress ?? 0;
+
+        const sourceExternalId = generateTestUUID();
+        // recorded_at is "now" — within active challenge window
+        const recordedAt = new Date().toISOString();
+
+        const { data, error } = await user1.client.rpc("log_health_activity", {
+          p_activities: JSON.stringify([
+            {
+              challenge_id: challengeId,
+              activity_type: "steps",
+              value: 5000,
+              source_external_id: sourceExternalId,
+              recorded_at: recordedAt,
+              source: "healthkit",
+            },
+          ]),
+        });
+
+        expect(error).toBeNull();
+
+        const result = typeof data === "string" ? JSON.parse(data) : data;
+        expect(result.inserted).toBe(1);
+
+        // Verify: activity_log row created
+        const { data: logRows } = await user1.client
+          .from("activity_logs")
+          .select("id, value")
+          .eq("challenge_id", challengeId)
+          .eq("source_external_id", sourceExternalId);
+
+        expect(logRows?.length).toBe(1);
+
+        // Verify: current_progress WAS incremented (challenge is active)
+        const { data: afterRows } = await user1.client
+          .from("challenge_participants")
+          .select("current_progress")
+          .eq("challenge_id", challengeId)
+          .eq("user_id", user1.id)
+          .single();
+
+        expect(afterRows?.current_progress).toBe(progressBefore + 5000);
+      } finally {
+        await cleanupChallenge(challengeId);
+      }
+    });
+  });
 });

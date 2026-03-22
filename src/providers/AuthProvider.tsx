@@ -43,6 +43,7 @@ import { useSecurityStore } from "@/stores/securityStore";
 import { syncServerTime, getServerNow, RESYNC_INTERVAL_MS } from "@/lib/serverTime";
 import { resetHealthService } from "@/services/health";
 import { addBreadcrumb } from "@/lib/sentry";
+import { createAuthStateHandler } from "./authStateHandler";
 import type { Profile } from "@/types/database-helpers";
 
 // =============================================================================
@@ -202,111 +203,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Configure Google Sign-In SDK (no-op if env vars not set)
     configureGoogleSignIn();
 
-    // Gate TOKEN_REFRESHED until bootstrap completes.
-    // Before INITIAL_SESSION, Supabase's auth context may not be ready for RLS.
-    let bootstrapComplete = false;
+    // Create the auth state change handler with injected dependencies.
+    // Logic is extracted to src/providers/authStateHandler.ts for testability.
+    const handleAuthStateChange = createAuthStateHandler({
+      mountedRef,
+      loadProfileAndSetState,
+      setState,
+      queryClient,
+      addBreadcrumb,
+      resetHealthService,
+    });
 
     const {
       data: { subscription },
-    } = getSupabaseClient().auth.onAuthStateChange(async (event, session) => {
-      console.log(
-        `[AuthProvider] 📡 onAuthStateChange: event=${event}, session=${session ? "YES" : "NO"}, bootstrap=${bootstrapComplete}`,
-      );
-
-      if (!mountedRef.current) return;
-
-      // =================================================================
-      // INITIAL_SESSION: App launch/restore — the ONLY bootstrap path
-      // =================================================================
-      if (event === "INITIAL_SESSION") {
-        bootstrapComplete = true;
-
-        if (session?.user) {
-          console.log(
-            `[AuthProvider] 🎬 Bootstrap: loading profile for ${session.user.id.substring(0, 8)}`,
-          );
-          addBreadcrumb("auth_session_restored");
-          await loadProfileAndSetState(session);
-        } else {
-          console.log(`[AuthProvider] 🎬 Bootstrap: no session`);
-          addBreadcrumb("auth_no_session");
-          setState((prev) => ({ ...prev, loading: false }));
-        }
-        return;
-      }
-
-      // =================================================================
-      // SIGNED_OUT: Always process — clear all state
-      // =================================================================
-      if (event === "SIGNED_OUT" || !session) {
-        console.log(`[AuthProvider] 🚪 Signed out (event=${event})`);
-        addBreadcrumb("auth_signed_out");
-        bootstrapComplete = true;
-        resetHealthService();
-        // Clear in-memory query cache on sign-out to prevent stale data
-        queryClient.clear();
-        setState({
-          session: null,
-          user: null,
-          profile: null,
-          loading: false,
-          profileError: null,
-          isRefreshingProfile: false,
-          error: null,
-          pendingEmailConfirmation: false,
-        });
-        return;
-      }
-
-      // =================================================================
-      // TOKEN_REFRESHED: Update session silently (no profile reload)
-      // =================================================================
-      if (event === "TOKEN_REFRESHED") {
-        if (!bootstrapComplete) {
-          console.log(`[AuthProvider] ⏭️ Skipping TOKEN_REFRESHED before bootstrap`);
-          return;
-        }
-        console.log(`[AuthProvider] 🔄 Token refreshed — updating session`);
-        addBreadcrumb("auth_token_refreshed");
-        setState((prev) => ({
-          ...prev,
-          session,
-          user: session.user,
-        }));
-        return;
-      }
-
-      // =================================================================
-      // USER_UPDATED: Update session/user when metadata changes.
-      // updateUser() writes to the server and emits this event with the
-      // updated session. Unlike SIGNED_IN (which calling methods handle
-      // end-to-end with profile loading), USER_UPDATED just means
-      // "user object changed" and carries no complex side effects.
-      // Handling it here ensures any updateUser() call, anywhere in the
-      // codebase, automatically propagates to React state.
-      // =================================================================
-      if (event === "USER_UPDATED") {
-        if (!bootstrapComplete) {
-          console.log(`[AuthProvider] ⏭️ Skipping USER_UPDATED before bootstrap`);
-          return;
-        }
-        console.log(`[AuthProvider] 📝 User updated — updating session`);
-        addBreadcrumb("auth_user_updated");
-        setState((prev) => ({
-          ...prev,
-          session,
-          user: session!.user,
-        }));
-        return;
-      }
-
-      // =================================================================
-      // ALL OTHER EVENTS: Ignored.
-      // SIGNED_IN is a side effect of sign-in methods that already
-      // handle their full flow end-to-end.
-      // =================================================================
-      console.log(`[AuthProvider] ⏭️ Ignoring ${event} — caller owns this flow`);
-    });
+    } = getSupabaseClient().auth.onAuthStateChange(handleAuthStateChange);
 
     // Safety timeout: if INITIAL_SESSION never fires (corrupted storage, etc.)
     const safetyTimeout = setTimeout(() => {
