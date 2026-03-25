@@ -29,7 +29,7 @@ export interface StartingSoonCardProps {
 // COMPONENT
 // ============================================================================
 export function StartingSoonCard({ challenge, onInvite }: StartingSoonCardProps) {
-  const { colors, spacing, radius } = useAppTheme();
+  const { colors, shadows, spacing, radius } = useAppTheme();
 
   const participantCount = challenge.participant_count || 1;
 
@@ -56,11 +56,12 @@ export function StartingSoonCard({ challenge, onInvite }: StartingSoonCardProps)
     <TouchableOpacity
       style={[
         styles.container,
+        shadows.card,
         {
-          backgroundColor: `${colors.warning}08`,
+          backgroundColor: colors.surface,
           borderRadius: radius.lg,
           borderWidth: 1,
-          borderColor: `${colors.warning}20`,
+          borderColor: `${colors.warning}30`,
           borderLeftWidth: 3,
           borderLeftColor: colors.warning,
           padding: spacing.md,

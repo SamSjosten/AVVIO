@@ -1,24 +1,10 @@
-// app/(tabs)/challenges.tsx
-// V2 Challenges Screen - Full challenges list with tabs
-// Design System v2.0 - Based on prototype
-//
-// Features:
-// - Tab navigation (Active, Completed)
-// - Pending invites section
-// - Collapsible challenge cards
-// - Empty states
-
 import React, { useState, useCallback } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, RefreshControl, ScrollView } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/providers/ThemeProvider";
-import {
-  useActiveChallenges,
-  useCompletedChallenges,
-  usePendingInvites,
-  useRespondToInvite,
-} from "@/hooks/useChallenges";
+import { useActiveChallenges, useCompletedChallenges, usePendingInvites } from "@/hooks/useChallenges";
 import { syncServerTime } from "@/lib/serverTime";
 import {
   LoadingState,
@@ -28,12 +14,11 @@ import {
   InviteRow,
 } from "@/components/shared";
 import { TestIDs } from "@/constants/testIDs";
-import { TrophyIcon } from "react-native-heroicons/outline";
 
 type TabType = "active" | "completed";
 
 export default function ChallengesScreenV2() {
-  const { colors, spacing, radius } = useAppTheme();
+  const { colors, spacing } = useAppTheme();
   const [activeTab, setActiveTab] = useState<TabType>("active");
   const [refreshing, setRefreshing] = useState(false);
 
@@ -53,12 +38,8 @@ export default function ChallengesScreenV2() {
 
   const { data: pendingInvites, refetch: refetchPending } = usePendingInvites();
 
-  const respondToInvite = useRespondToInvite();
-
-  // Auto-refresh on focus
   useFocusEffect(
     useCallback(() => {
-      // Sync server time for accurate challenge status
       syncServerTime().catch(() => {});
       refetchActive();
       refetchCompleted();
@@ -72,18 +53,6 @@ export default function ChallengesScreenV2() {
     setRefreshing(false);
   };
 
-  const handleAcceptInvite = async (challengeId: string) => {
-    try {
-      await respondToInvite.mutateAsync({
-        challenge_id: challengeId,
-        response: "accepted",
-      });
-    } catch (err) {
-      console.error("Failed to accept invite:", err);
-    }
-  };
-
-  // Loading state
   if (loadingActive && loadingCompleted) {
     return (
       <SafeAreaView
@@ -98,7 +67,6 @@ export default function ChallengesScreenV2() {
     );
   }
 
-  // Error state
   if (activeError || completedError) {
     return (
       <SafeAreaView
@@ -115,6 +83,7 @@ export default function ChallengesScreenV2() {
           onAction={() => {
             refetchActive();
             refetchCompleted();
+            refetchPending();
           }}
         />
       </SafeAreaView>
@@ -123,81 +92,21 @@ export default function ChallengesScreenV2() {
 
   const activeCount = activeChallenges?.length || 0;
   const completedCount = completedChallenges?.length || 0;
-  const pendingCount = pendingInvites?.length || 0;
-
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={["top"]}
       testID={TestIDs.screensV2?.challenges || "challenges-screen-v2"}
     >
-      {/* Header */}
+      <LinearGradient
+        colors={[colors.backgroundGradient.start, colors.backgroundGradient.end]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      />
+
       <View style={[styles.headerContainer, { backgroundColor: colors.surface }]}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>Challenges</Text>
-      </View>
-
-      {/* Tabs */}
-      <View
-        style={[
-          styles.tabContainer,
-          {
-            backgroundColor: colors.surface,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border,
-          },
-        ]}
-      >
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === "active" && {
-              borderBottomWidth: 2,
-              borderBottomColor: colors.primary.main,
-            },
-          ]}
-          onPress={() => setActiveTab("active")}
-          activeOpacity={0.7}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: activeTab === "active" }}
-          accessibilityLabel={`Active tab, ${activeCount} challenges`}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              {
-                color: activeTab === "active" ? colors.primary.main : colors.textMuted,
-              },
-            ]}
-          >
-            Active ({activeCount})
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === "completed" && {
-              borderBottomWidth: 2,
-              borderBottomColor: colors.primary.main,
-            },
-          ]}
-          onPress={() => setActiveTab("completed")}
-          activeOpacity={0.7}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: activeTab === "completed" }}
-          accessibilityLabel={`Completed tab, ${completedCount} challenges`}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              {
-                color: activeTab === "completed" ? colors.primary.main : colors.textMuted,
-              },
-            ]}
-          >
-            Completed ({completedCount})
-          </Text>
-        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -211,29 +120,76 @@ export default function ChallengesScreenV2() {
           />
         }
       >
-        {/* Pending Invites (only on Active tab) */}
-        {activeTab === "active" && pendingCount > 0 && (
-          <View style={[styles.section, { marginBottom: spacing.xl }]}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-                PENDING INVITES ({pendingCount})
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabScrollContent}
+          style={{ marginBottom: spacing.lg }}
+        >
+          <View style={styles.tabRow}>
+            <TouchableOpacity
+              style={[
+                styles.pillTab,
+                {
+                  backgroundColor: activeTab === "active" ? colors.primary.main : colors.surface,
+                  borderColor: activeTab === "active" ? colors.primary.main : colors.border,
+                },
+              ]}
+              onPress={() => setActiveTab("active")}
+              activeOpacity={0.8}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activeTab === "active" }}
+              accessibilityLabel={`Active tab, ${activeCount} challenges`}
+            >
+              <Text
+                style={[
+                  styles.pillTabText,
+                  { color: activeTab === "active" ? colors.textInverse : colors.textSecondary },
+                ]}
+              >
+                Active
               </Text>
-            </View>
-            <View style={{ gap: spacing.sm }}>
-              {pendingInvites?.map((invite) => (
-                <InviteRow
-                  key={invite.challenge.id}
-                  invite={invite}
-                  onPress={() => router.push(`/challenge/${invite.challenge.id}`)}
-                />
-              ))}
-            </View>
-          </View>
-        )}
+            </TouchableOpacity>
 
-        {/* Active Challenges Tab */}
-        {activeTab === "active" && (
-          <>
+            <TouchableOpacity
+              style={[
+                styles.pillTab,
+                {
+                  backgroundColor:
+                    activeTab === "completed" ? colors.primary.main : colors.surface,
+                  borderColor: activeTab === "completed" ? colors.primary.main : colors.border,
+                },
+              ]}
+              onPress={() => setActiveTab("completed")}
+              activeOpacity={0.8}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activeTab === "completed" }}
+              accessibilityLabel={`Completed tab, ${completedCount} challenges`}
+            >
+              <Text
+                style={[
+                  styles.pillTabText,
+                  {
+                    color: activeTab === "completed" ? colors.textInverse : colors.textSecondary,
+                  },
+                ]}
+              >
+                Completed
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        {activeTab === "active" ? (
+          <View style={{ gap: spacing.sm }}>
+            {pendingInvites?.map((invite) => (
+              <InviteRow
+                key={invite.challenge.id}
+                invite={invite}
+                onPress={() => router.push(`/challenge/${invite.challenge.id}`)}
+              />
+            ))}
+
             {activeCount === 0 ? (
               <EmptyState
                 variant="challenges"
@@ -241,39 +197,29 @@ export default function ChallengesScreenV2() {
                 onAction={() => router.push("/challenge/create")}
               />
             ) : (
-              <View style={{ gap: spacing.sm }}>
-                {activeChallenges?.map((challenge, index) => (
-                  <ChallengeCard
-                    key={challenge.id}
-                    challenge={challenge}
-                    defaultExpanded={index === 0}
-                  />
-                ))}
-              </View>
+              activeChallenges?.map((challenge, index) => (
+                <ChallengeCard
+                  key={challenge.id}
+                  challenge={challenge}
+                  variant={index === 0 ? "featured" : "standard"}
+                />
+              ))
             )}
-          </>
+          </View>
+        ) : completedCount === 0 ? (
+          <EmptyState
+            variant="generic"
+            title="No Completed Challenges"
+            message="Completed challenges will appear here after they end."
+          />
+        ) : (
+          <View style={{ gap: spacing.sm }}>
+            {completedChallenges?.map((challenge) => (
+              <CompletedChallengeRow key={challenge.id} challenge={challenge} />
+            ))}
+          </View>
         )}
 
-        {/* Completed Challenges Tab */}
-        {activeTab === "completed" && (
-          <>
-            {completedCount === 0 ? (
-              <EmptyState
-                variant="generic"
-                title="No Completed Challenges"
-                message="Completed challenges will appear here after they end."
-              />
-            ) : (
-              <View style={{ gap: spacing.sm }}>
-                {completedChallenges?.map((challenge) => (
-                  <CompletedChallengeRow key={challenge.id} challenge={challenge} />
-                ))}
-              </View>
-            )}
-          </>
-        )}
-
-        {/* Bottom spacing for FAB */}
         <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
@@ -293,28 +239,27 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontFamily: "PlusJakartaSans_700Bold",
   },
-  tabContainer: {
-    flexDirection: "row",
-    paddingHorizontal: 20,
-  },
-  tab: {
-    paddingVertical: 12,
-    marginRight: 24,
-  },
-  tabText: {
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans_600SemiBold",
-  },
   scrollContent: {
     flexGrow: 1,
   },
-  section: {},
-  sectionHeader: {
-    marginBottom: 12,
+  tabScrollContent: {
+    paddingRight: 12,
   },
-  sectionTitle: {
-    fontSize: 12,
+  tabRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  pillTab: {
+    minHeight: 42,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pillTabText: {
+    fontSize: 15,
     fontFamily: "PlusJakartaSans_600SemiBold",
-    letterSpacing: 0.5,
   },
 });

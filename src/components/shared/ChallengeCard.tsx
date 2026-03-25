@@ -1,32 +1,21 @@
-// src/components/shared/ChallengeCard.tsx
-// Collapsible challenge card component
-// Design System - Based on prototype
-
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-} from "react-native";
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Image, ImageBackground } from "react-native";
 import { router } from "expo-router";
 import { useAppTheme } from "@/providers/ThemeProvider";
-import { ProgressBar } from "@/components/shared";
-import { getDaysRemaining } from "@/lib/serverTime";
-import { ChevronDownIcon, ChevronUpIcon, UsersIcon } from "react-native-heroicons/outline";
+import { useAuth } from "@/hooks/useAuth";
+import { Avatar } from "./Avatar";
+import { ProgressBar } from "./ProgressBar";
+import { getChallengeTypeImage } from "@/constants/challengeTypeImages";
 import type { ChallengeWithParticipation } from "@/services/challenges";
-
-// Enable LayoutAnimation on Android
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 export interface ChallengeCardProps {
   challenge: ChallengeWithParticipation;
-  defaultExpanded?: boolean;
+  variant?: "featured" | "standard";
+  onPress?: () => void;
+}
+
+export interface CompletedChallengeRowProps {
+  challenge: ChallengeWithParticipation;
   onPress?: () => void;
 }
 
@@ -44,163 +33,170 @@ function getRankMedal(rank: number): string {
   return "";
 }
 
-export function ChallengeCard({ challenge, defaultExpanded = false, onPress }: ChallengeCardProps) {
-  const { colors, spacing, radius } = useAppTheme();
-  const [expanded, setExpanded] = useState(defaultExpanded);
+function getRankColor(rank: number, fallback: string): string {
+  if (rank === 1) return "#FFB800";
+  if (rank === 2) return "#94A3B8";
+  if (rank === 3) return "#CD7C2F";
+  return fallback;
+}
 
-  const progress = challenge.my_participation?.current_progress || 0;
-  const progressPercent = Math.min((progress / challenge.goal_value) * 100, 100);
-  const rank = challenge.my_rank || 1;
-  const participantCount = challenge.participant_count || 1;
-  const friendCount = Math.max(0, participantCount - 1);
-  const daysLeft = getDaysRemaining(challenge.end_date);
+function getProgressPercent(progress: number, goalValue: number): number {
+  if (goalValue <= 0) return 0;
+  return Math.min((progress / goalValue) * 100, 100);
+}
 
-  // Rank colors
-  const rankColor =
-    rank === 1
-      ? "#FFB800" // Gold
-      : rank === 2
-        ? "#94A3B8" // Silver
-        : rank === 3
-          ? "#CD7C2F" // Bronze
-          : colors.primary.main;
+function formatGoalUnit(goalUnit: string): string {
+  return goalUnit.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
-  const toggleExpanded = () => {
-    LayoutAnimation.configureNext({
-      duration: 200,
-      create: {
-        type: LayoutAnimation.Types.easeInEaseOut,
-        property: LayoutAnimation.Properties.opacity,
-      },
-      update: { type: LayoutAnimation.Types.easeInEaseOut },
-      delete: {
-        type: LayoutAnimation.Types.easeInEaseOut,
-        property: LayoutAnimation.Properties.opacity,
-      },
-    });
-    setExpanded(!expanded);
-  };
-
-  const handlePress = () => {
-    if (onPress) {
-      onPress();
-    } else {
-      router.push(`/challenge/${challenge.id}`);
-    }
-  };
-
+function RankBadge({
+  rank,
+  rankColor,
+  avatarUri,
+  avatarName,
+}: {
+  rank: number;
+  rankColor: string;
+  avatarUri?: string | null;
+  avatarName?: string;
+}) {
   return (
     <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: colors.surface,
-          borderRadius: radius.xl,
-          borderWidth: expanded ? 1.5 : 1,
-          borderColor: expanded ? colors.primary.main : colors.border,
-        },
-      ]}
+      style={styles.rankBadgeContainer}
+      accessibilityLabel={`${getRankMedal(rank)} ${getRankText(rank)} place`}
     >
-      {/* Header - Always visible */}
-      <TouchableOpacity
-        style={[styles.header, { padding: spacing.md }]}
-        onPress={toggleExpanded}
-        activeOpacity={0.7}
-      >
-        <View style={styles.headerContent}>
-          <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>
-            {challenge.title}
-          </Text>
-          <View style={styles.metaRow}>
-            <View style={styles.metaItem}>
-              <UsersIcon size={12} color={colors.textMuted} />
-              <Text style={[styles.metaText, { color: colors.textMuted }]}>
-                {friendCount > 0 ? `vs ${friendCount} friend${friendCount > 1 ? "s" : ""}` : "Solo"}
-              </Text>
-            </View>
-            <Text style={[styles.metaDot, { color: colors.textMuted }]}>•</Text>
-            <Text style={[styles.metaText, { color: colors.textMuted }]}>
-              {daysLeft} day{daysLeft !== 1 ? "s" : ""} left
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.headerRight}>
-          <Text style={[styles.rankText, { color: rankColor }]}>{getRankText(rank)}</Text>
-          {expanded ? (
-            <ChevronUpIcon size={16} color={colors.textMuted} />
-          ) : (
-            <ChevronDownIcon size={16} color={colors.textMuted} />
-          )}
-        </View>
-      </TouchableOpacity>
-
-      {/* Expanded content */}
-      {expanded && (
-        <View
-          style={[
-            styles.expandedContent,
-            {
-              borderTopWidth: 1,
-              borderTopColor: colors.border,
-              padding: spacing.md,
-            },
-          ]}
-        >
-          {/* Rank badge */}
-          <View style={styles.rankBadgeRow}>
-            <View
-              style={[
-                styles.rankBadge,
-                {
-                  backgroundColor: rankColor,
-                  borderRadius: radius.full,
-                  paddingHorizontal: spacing.sm,
-                  paddingVertical: spacing.xs,
-                },
-              ]}
-            >
-              {rank <= 3 && <Text style={styles.rankMedal}>{getRankMedal(rank)}</Text>}
-              <Text style={styles.rankBadgeText}>{getRankText(rank)}</Text>
-            </View>
-          </View>
-
-          {/* Progress */}
-          <View style={{ marginBottom: spacing.lg }}>
-            <View style={styles.progressHeader}>
-              <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Progress</Text>
-              <Text style={[styles.progressValue, { color: colors.primary.main }]}>
-                {progress.toLocaleString()} / {challenge.goal_value.toLocaleString()}
-              </Text>
-            </View>
-            <ProgressBar progress={progressPercent} variant="primary" size="large" />
-          </View>
-
-          {/* View button */}
-          <TouchableOpacity
-            style={[
-              styles.viewButton,
-              {
-                backgroundColor: colors.primary.main,
-                borderRadius: radius.lg,
-                paddingVertical: spacing.md,
-              },
-            ]}
-            onPress={handlePress}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.viewButtonText}>View Challenge</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <View style={[styles.rankBadgeCircle, { backgroundColor: rankColor }]}>
+        <Text style={styles.rankBadgeText}>{getRankText(rank)}</Text>
+      </View>
+      <Avatar uri={avatarUri} name={avatarName} size="xs" style={styles.rankBadgeAvatar} />
     </View>
   );
 }
 
-// Compact version for completed challenges
-export interface CompletedChallengeRowProps {
-  challenge: ChallengeWithParticipation;
-  onPress?: () => void;
+export function ChallengeCard({ challenge, variant = "standard", onPress }: ChallengeCardProps) {
+  const { colors, shadows, spacing, radius } = useAppTheme();
+  const { profile } = useAuth();
+
+  const progress = challenge.my_participation?.current_progress || 0;
+  const progressPercent = getProgressPercent(progress, challenge.goal_value);
+  const rank = challenge.my_rank || 1;
+  const rankColor = getRankColor(rank, colors.primary.main);
+  const imageSource = getChallengeTypeImage(challenge.challenge_type, challenge.id);
+  const avatarName = profile?.display_name || profile?.username || "You";
+  const cardPress = onPress || (() => router.push(`/challenge/${challenge.id}`));
+
+  if (variant === "featured") {
+    return (
+      <TouchableOpacity
+        style={[styles.cardShadow, shadows.card]}
+        onPress={cardPress}
+        activeOpacity={0.92}
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${challenge.title}`}
+      >
+        <View
+          style={[
+            styles.featuredCard,
+            {
+              backgroundColor: colors.surface,
+              borderRadius: radius["2xl"],
+            },
+          ]}
+        >
+          <Image source={imageSource} style={styles.featuredImage} resizeMode="cover" />
+
+          <View style={[styles.featuredContent, { padding: spacing.lg }]}>
+            <Text style={[styles.featuredTitle, { color: colors.textPrimary }]} numberOfLines={2}>
+              {challenge.title}
+            </Text>
+
+            <ProgressBar progress={progressPercent} variant="gradient" size="large" />
+
+            <View style={[styles.featuredStatsRow, { marginTop: spacing.md }]}>
+              <View style={styles.featuredStatsText}>
+                <Text style={[styles.featuredProgressValue, { color: colors.textPrimary }]}>
+                  {progress.toLocaleString()}/{challenge.goal_value.toLocaleString()}
+                </Text>
+                <Text style={[styles.featuredProgressMeta, { color: colors.textMuted }]}>
+                  {Math.round(progressPercent)}% Complete
+                </Text>
+              </View>
+
+              <RankBadge
+                rank={rank}
+                rankColor={rankColor}
+                avatarUri={profile?.avatar_url}
+                avatarName={avatarName}
+              />
+            </View>
+
+            <View
+              style={[
+                styles.featuredButton,
+                {
+                  backgroundColor: colors.primary.main,
+                  borderRadius: radius.lg,
+                  marginTop: spacing.lg,
+                },
+              ]}
+            >
+              <Text style={styles.featuredButtonText}>View Challenge</Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <TouchableOpacity
+      style={[styles.cardShadow, shadows.card]}
+      onPress={cardPress}
+      activeOpacity={0.9}
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${challenge.title}`}
+    >
+      <ImageBackground
+        source={imageSource}
+        style={styles.standardCard}
+        imageStyle={{ borderRadius: radius["2xl"] }}
+      >
+        <View
+          style={[
+            styles.standardOverlay,
+            {
+              backgroundColor: colors.overlay,
+              borderRadius: radius["2xl"],
+              padding: spacing.lg,
+            },
+          ]}
+        >
+          <Text style={styles.standardTitle} numberOfLines={2}>
+            {challenge.title}
+          </Text>
+
+          <View style={styles.standardFooter}>
+            <Text style={styles.standardProgress} numberOfLines={1}>
+              {progress.toLocaleString()}/{challenge.goal_value.toLocaleString()}{" "}
+              {formatGoalUnit(challenge.goal_unit)}
+            </Text>
+
+            <View
+              style={[
+                styles.standardButton,
+                {
+                  backgroundColor: colors.primary.main,
+                  borderRadius: radius.full,
+                },
+              ]}
+            >
+              <Text style={styles.standardButtonText}>View Challenge</Text>
+            </View>
+          </View>
+        </View>
+      </ImageBackground>
+    </TouchableOpacity>
+  );
 }
 
 export function CompletedChallengeRow({ challenge, onPress }: CompletedChallengeRowProps) {
@@ -208,6 +204,8 @@ export function CompletedChallengeRow({ challenge, onPress }: CompletedChallenge
   const rank = challenge.my_rank || 1;
   const participantCount = challenge.participant_count || 1;
   const friendCount = Math.max(0, participantCount - 1);
+  const rankColor = getRankColor(rank, colors.achievement.main);
+  const imageSource = getChallengeTypeImage(challenge.challenge_type, challenge.id);
 
   const endDate = new Date(challenge.end_date);
   const endDateStr = endDate.toLocaleDateString("en-US", {
@@ -215,22 +213,7 @@ export function CompletedChallengeRow({ challenge, onPress }: CompletedChallenge
     day: "numeric",
   });
 
-  const rankColor =
-    rank === 1
-      ? "#FFB800"
-      : rank === 2
-        ? "#94A3B8"
-        : rank === 3
-          ? "#CD7C2F"
-          : colors.achievement.main;
-
-  const handlePress = () => {
-    if (onPress) {
-      onPress();
-    } else {
-      router.push(`/challenge/${challenge.id}`);
-    }
-  };
+  const cardPress = onPress || (() => router.push(`/challenge/${challenge.id}`));
 
   return (
     <TouchableOpacity
@@ -244,10 +227,11 @@ export function CompletedChallengeRow({ challenge, onPress }: CompletedChallenge
           padding: spacing.md,
         },
       ]}
-      onPress={handlePress}
+      onPress={cardPress}
       activeOpacity={0.7}
     >
-      <Text style={styles.completedMedal}>{rank <= 3 ? getRankMedal(rank) : rank}</Text>
+      <Image source={imageSource} style={[styles.completedThumb, { borderRadius: radius.lg }]} />
+
       <View style={styles.completedContent}>
         <Text style={[styles.completedTitle, { color: colors.textPrimary }]} numberOfLines={1}>
           {challenge.title}
@@ -257,123 +241,149 @@ export function CompletedChallengeRow({ challenge, onPress }: CompletedChallenge
           {friendCount > 0 ? `${friendCount} friend${friendCount > 1 ? "s" : ""}` : "Solo"}
         </Text>
       </View>
+
       <Text style={[styles.completedRank, { color: rankColor }]}>{getRankText(rank)}</Text>
     </TouchableOpacity>
   );
 }
 
+export { getRankText, getRankMedal };
+
 const styles = StyleSheet.create({
-  container: {
+  cardShadow: {
+    borderRadius: 16,
+  },
+  featuredCard: {
     overflow: "hidden",
   },
-  header: {
+  featuredImage: {
+    width: "100%",
+    height: 180,
+  },
+  featuredContent: {
+    gap: 14,
+  },
+  featuredTitle: {
+    fontSize: 20,
+    lineHeight: 26,
+    fontFamily: "PlusJakartaSans_700Bold",
+  },
+  featuredStatsRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 12,
   },
-  headerContent: {
+  featuredStatsText: {
     flex: 1,
-    marginRight: 12,
+    gap: 2,
   },
-  title: {
-    fontSize: 16,
-    fontFamily: "PlusJakartaSans_600SemiBold",
-    marginBottom: 4,
+  featuredProgressValue: {
+    fontSize: 18,
+    fontFamily: "PlusJakartaSans_700Bold",
   },
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  metaItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  metaText: {
-    fontSize: 12,
+  featuredProgressMeta: {
+    fontSize: 13,
     fontFamily: "PlusJakartaSans_500Medium",
   },
-  metaDot: {
-    marginHorizontal: 6,
-    fontSize: 12,
-  },
-  headerRight: {
-    flexDirection: "row",
+  featuredButton: {
+    minHeight: 48,
+    justifyContent: "center",
     alignItems: "center",
-    gap: 8,
   },
-  rankText: {
-    fontSize: 13,
-    fontFamily: "PlusJakartaSans_600SemiBold",
-  },
-  expandedContent: {},
-  rankBadgeRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginBottom: 12,
-  },
-  rankBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  rankMedal: {
-    fontSize: 12,
-  },
-  rankBadgeText: {
-    fontSize: 12,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+  featuredButtonText: {
+    fontSize: 15,
+    fontFamily: "PlusJakartaSans_700Bold",
     color: "#FFFFFF",
   },
-  progressHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  rankBadgeContainer: {
+    width: 54,
+    height: 54,
+    justifyContent: "center",
     alignItems: "center",
-    marginBottom: 8,
+    position: "relative",
   },
-  progressLabel: {
-    fontSize: 13,
-    fontFamily: "PlusJakartaSans_500Medium",
-  },
-  progressValue: {
-    fontSize: 13,
-    fontFamily: "PlusJakartaSans_600SemiBold",
-  },
-  viewButton: {
+  rankBadgeCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
   },
-  viewButtonText: {
+  rankBadgeText: {
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 11,
+    fontFamily: "PlusJakartaSans_700Bold",
+  },
+  rankBadgeAvatar: {
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  standardCard: {
+    minHeight: 160,
+    justifyContent: "flex-end",
+  },
+  standardOverlay: {
+    minHeight: 160,
+    justifyContent: "space-between",
+  },
+  standardTitle: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    lineHeight: 24,
+    fontFamily: "PlusJakartaSans_700Bold",
+    maxWidth: "82%",
+  },
+  standardFooter: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  standardProgress: {
+    flex: 1,
+    color: "#FFFFFF",
+    fontSize: 14,
+    lineHeight: 18,
     fontFamily: "PlusJakartaSans_600SemiBold",
   },
-  // Completed row styles
+  standardButton: {
+    minHeight: 36,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  standardButtonText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontFamily: "PlusJakartaSans_700Bold",
+  },
   completedRow: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 12,
   },
-  completedMedal: {
-    fontSize: 16,
-    width: 24,
-    textAlign: "center",
-    marginRight: 12,
+  completedThumb: {
+    width: 48,
+    height: 48,
   },
   completedContent: {
     flex: 1,
   },
   completedTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: "PlusJakartaSans_600SemiBold",
-    marginBottom: 2,
+    marginBottom: 4,
   },
   completedMeta: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: "PlusJakartaSans_500Medium",
   },
   completedRank: {
-    fontSize: 13,
-    fontFamily: "PlusJakartaSans_600SemiBold",
-    marginLeft: 8,
+    fontSize: 14,
+    fontFamily: "PlusJakartaSans_700Bold",
   },
 });

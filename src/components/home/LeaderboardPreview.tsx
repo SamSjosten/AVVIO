@@ -71,7 +71,7 @@ export function LeaderboardPreview({
             style={[
               styles.skeletonRow,
               {
-                backgroundColor: `${colors.textMuted}15`,
+                backgroundColor: `${colors.textMuted}25`,
                 borderRadius: radius.sm,
                 marginBottom: spacing.xs,
               },
@@ -147,7 +147,7 @@ export function LeaderboardPreview({
               style={[
                 styles.progressBarContainer,
                 {
-                  backgroundColor: `${colors.textMuted}20`,
+                  backgroundColor: `${colors.textMuted}30`,
                   borderRadius: radius.xs,
                 },
               ]}

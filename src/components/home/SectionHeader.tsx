@@ -49,7 +49,7 @@ export function SectionHeader({
     variant === "warning"
       ? `${colors.warning}20`
       : variant === "muted"
-        ? `${colors.textMuted}15`
+        ? `${colors.textMuted}25`
         : `${colors.primary.main}20`;
 
   return (

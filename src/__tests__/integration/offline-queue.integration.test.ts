@@ -59,6 +59,17 @@ const mockRequireUserId = jest.fn<Promise<string>, []>();
 jest.mock("@/lib/supabase", () => ({
   getSupabaseClient: () => mockGetSupabaseClient(),
   requireUserId: () => mockRequireUserId(),
+  withAuth: async (operation: (userId: string) => Promise<unknown>) => {
+    const userId = await mockRequireUserId();
+    return operation(userId);
+  },
+  getUserId: async () => {
+    try {
+      return await mockRequireUserId();
+    } catch {
+      return null;
+    }
+  },
 }));
 
 // Import AFTER mocks (Jest hoists jest.mock above imports)

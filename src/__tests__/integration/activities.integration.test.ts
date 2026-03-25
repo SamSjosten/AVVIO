@@ -29,6 +29,7 @@ jest.mock("expo-crypto", () => ({
 jest.mock("@/lib/supabase", () => ({
   getSupabaseClient: jest.fn(() => ({})),
   withAuth: jest.fn(),
+  getUserId: jest.fn().mockResolvedValue(null),
 }));
 
 // Validate config before running tests
@@ -1198,8 +1199,10 @@ describe("Activity Integration Tests", () => {
   // ===========================================================================
   // log_health_activity RPC — active-window enforcement (migration 046)
   //
-  // Unskip after deploying migration 046 to the test instance:
-  //   npx supabase db push
+  // SKIPPED: migration 046 is not deployed to the test instance.
+  // `supabase db push` is blocked by a pre-existing schema drift in migration
+  // 018 (return type mismatch on get_my_challenges). Once 018 is resolved and
+  // all pending migrations (044-046) are pushed, change describe.skip → describe.
   // ===========================================================================
   describe.skip("log_health_activity RPC — active-window gate", () => {
     it("should record activity_log but NOT increment progress for completed challenge", async () => {

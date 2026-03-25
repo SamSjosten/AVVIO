@@ -4,6 +4,12 @@ Welcome to the FitChallenge developer documentation.
 
 ## Quick Links
 
+### Product
+
+| Document | Description |
+| --- | --- |
+| [Narrative Adventures PRD](./product/narrative-adventures-prd.md) | Product requirements document |
+
 ### Getting Started
 
 | Document                                       | Description                   |
@@ -22,6 +28,8 @@ Welcome to the FitChallenge developer documentation.
 | [RLS Policies](./architecture/rls-policies.md)             | Row Level Security rules     |
 | [Feature Flags](./architecture/feature-flags.md)           | UI version switching         |
 | [Health Integration](./architecture/health-integration.md) | HealthKit sync (iOS; Android planned) |
+| [Narrative Adventures Technical Design](./architecture/narrative-adventures-technical-design.md) | Engineering design specification |
+| [Narrative Adventures Spec](./architecture/narrative-adventures-production-spec.md) | Production feature specification |
 
 ### API Reference
 

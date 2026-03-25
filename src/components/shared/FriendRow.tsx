@@ -20,13 +20,14 @@ export interface FriendRowProps {
 }
 
 export function FriendRow({ friend, onPress, onRemove }: FriendRowProps) {
-  const { colors, spacing, radius } = useAppTheme();
+  const { colors, shadows, spacing, radius } = useAppTheme();
   const profile = friend.friend_profile;
 
   return (
     <TouchableOpacity
       style={[
         styles.container,
+        shadows.sm,
         {
           backgroundColor: colors.surface,
           borderRadius: radius.xl,
@@ -67,13 +68,14 @@ export function FriendRequestRow({
   onDecline,
   loading = false,
 }: FriendRequestRowProps) {
-  const { colors, spacing, radius } = useAppTheme();
+  const { colors, shadows, spacing, radius } = useAppTheme();
   const profile = request.requester;
 
   return (
     <View
       style={[
         styles.requestContainer,
+        shadows.sm,
         {
           backgroundColor: colors.surface,
           borderRadius: radius.xl,
@@ -150,12 +152,13 @@ export function SearchResultRow({
   loading = false,
   alreadySent = false,
 }: SearchResultRowProps) {
-  const { colors, spacing, radius } = useAppTheme();
+  const { colors, shadows, spacing, radius } = useAppTheme();
 
   return (
     <View
       style={[
         styles.container,
+        shadows.sm,
         {
           backgroundColor: colors.surface,
           borderRadius: radius.xl,

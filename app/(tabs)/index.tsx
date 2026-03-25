@@ -23,6 +23,7 @@ import {
   RefreshControl,
   ScrollView,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -75,7 +76,7 @@ const ACCORDION_ANIMATION = {
 };
 
 export default function HomeScreenV2() {
-  const { colors, spacing, radius } = useAppTheme();
+  const { colors, spacing, radius, shadows } = useAppTheme();
   const { showToast } = useToast();
 
   // Consolidated data fetching
@@ -230,6 +231,13 @@ export default function HomeScreenV2() {
       edges={["top"]}
       testID={TestIDs.screensV2?.home || "home-screen-v2"}
     >
+      {/* Subtle gradient background for depth */}
+      <LinearGradient
+        colors={[colors.backgroundGradient.start, colors.backgroundGradient.end]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      />
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { padding: spacing.lg }]}
         showsVerticalScrollIndicator={false}
@@ -472,6 +480,7 @@ export default function HomeScreenV2() {
                   borderWidth: 1,
                   borderColor: colors.border,
                   overflow: "hidden",
+                  ...shadows.card,
                 },
               ]}
             >
@@ -508,7 +517,7 @@ export default function HomeScreenV2() {
                   Completed
                 </Text>
                 <View
-                  style={[styles.completedCountBadge, { backgroundColor: `${colors.textMuted}15` }]}
+                  style={[styles.completedCountBadge, { backgroundColor: `${colors.textMuted}25` }]}
                 >
                   <Text style={[styles.completedCountText, { color: colors.textSecondary }]}>
                     {completedChallenges.length}

@@ -62,7 +62,7 @@ export function ExpandableChallengeCard({
   isExpanded,
   onToggleExpand,
 }: ExpandableChallengeCardProps) {
-  const { colors, spacing, radius } = useAppTheme();
+  const { colors, shadows, spacing, radius } = useAppTheme();
 
   // Lazy-load leaderboard only when expanded
   const { data: leaderboard, isLoading: isLeaderboardLoading } = useLeaderboard(
@@ -96,11 +96,12 @@ export function ExpandableChallengeCard({
     <View
       style={[
         styles.container,
+        shadows.card,
         {
-          backgroundColor: `${colors.primary.main}08`,
+          backgroundColor: colors.surface,
           borderRadius: radius.lg,
           borderWidth: 1,
-          borderColor: `${colors.primary.main}20`,
+          borderColor: `${colors.primary.main}30`,
           borderLeftWidth: 3,
           borderLeftColor: colors.primary.main,
         },
@@ -155,7 +156,7 @@ export function ExpandableChallengeCard({
               style={[
                 styles.rankBadge,
                 {
-                  backgroundColor: rank === 1 ? "rgba(255, 215, 0, 0.15)" : `${colors.textMuted}15`,
+                  backgroundColor: rank === 1 ? "rgba(255, 215, 0, 0.15)" : `${colors.textMuted}25`,
                   borderRadius: radius.full,
                   paddingHorizontal: 10,
                   paddingVertical: 4,
@@ -189,7 +190,7 @@ export function ExpandableChallengeCard({
               style={[
                 styles.progressBarContainer,
                 {
-                  backgroundColor: `${colors.textMuted}20`,
+                  backgroundColor: `${colors.textMuted}30`,
                   borderRadius: radius.xs,
                 },
               ]}

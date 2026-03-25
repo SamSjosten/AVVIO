@@ -21,6 +21,7 @@ import {
   Text,
   TouchableOpacity,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets, Edge, SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/providers/ThemeProvider";
 import { componentSize, spacing } from "@/constants/theme";
@@ -209,6 +210,13 @@ export function ScreenContainer({
       <StatusBar
         barStyle={colors.textPrimary === "#FAFAFA" ? "light-content" : "dark-content"}
         backgroundColor={colors.background}
+      />
+      {/* Subtle gradient background for depth */}
+      <LinearGradient
+        colors={[colors.backgroundGradient.start, colors.backgroundGradient.end]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
       />
       {header}
       {renderContent()}

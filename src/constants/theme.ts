@@ -57,14 +57,18 @@ export const colors = {
     info: "#3B82F6",
 
     // Surfaces
-    background: "#F8FAF9",
+    background: "#E8ECEB", // Deeper warm gray for stronger card contrast
+    backgroundGradient: {
+      start: "#EEF1F0", // Lighter at top
+      end: "#E2E6E5", // Slightly deeper at bottom
+    },
     surface: "#FFFFFF",
     surfaceElevated: "#FFFFFF",
     surfacePressed: "#F1F5F9",
 
     // NEW: Input-specific surfaces
     input: {
-      background: "#F9FAFB", // Tailwind gray-50
+      background: "#F3F4F6", // Tailwind gray-100
       backgroundFocus: "#FFFFFF",
       backgroundError: "#FEF2F2", // Tailwind red-50
       backgroundDisabled: "#F3F4F6", // Tailwind gray-100
@@ -84,22 +88,32 @@ export const colors = {
     },
 
     // Borders
-    border: "#E5E7EB", // Tailwind gray-200
-    borderStrong: "#D1D5DB", // Tailwind gray-300
+    border: "#D1D5DB", // Tailwind gray-300
+    borderStrong: "#9CA3AF", // Tailwind gray-400
     borderFocus: "#10B981", // Updated to match primary
 
     // Text
     textPrimary: "#111827", // Tailwind gray-900
-    textSecondary: "#6B7280", // Tailwind gray-500
-    textMuted: "#9CA3AF", // Tailwind gray-400
+    textSecondary: "#4B5563", // Tailwind gray-600
+    textMuted: "#6B7280", // Tailwind gray-500
     textInverse: "#FFFFFF",
 
-    // NEW: Gradient stops (for LinearGradient)
+    // Gradient stops (for LinearGradient)
     gradient: {
       primary: {
         start: "#34D399", // emerald-400
         middle: "#10B981", // emerald-500
         end: "#0D9488", // teal-600
+      },
+      // Screen background gradient (subtle depth)
+      background: {
+        start: "#EEF1F0",
+        end: "#E2E6E5",
+      },
+      // Header underlay gradient (fade into background)
+      headerFade: {
+        start: "#FFFFFF",
+        end: "rgba(255, 255, 255, 0)",
       },
     },
 
@@ -151,7 +165,11 @@ export const colors = {
     info: "#60A5FA",
 
     // Surfaces (Dark Gray)
-    background: "#111827", // Tailwind gray-900
+    background: "#0F1520", // Slightly deeper than gray-900
+    backgroundGradient: {
+      start: "#131B2B", // Lighter at top
+      end: "#0B101A", // Deeper at bottom
+    },
     surface: "#1F2937", // Tailwind gray-800
     surfaceElevated: "#374151", // Tailwind gray-700
     surfacePressed: "#4B5563", // Tailwind gray-600
@@ -194,6 +212,14 @@ export const colors = {
         start: "#34D399",
         middle: "#10B981",
         end: "#0D9488",
+      },
+      background: {
+        start: "#131B2B",
+        end: "#0B101A",
+      },
+      headerFade: {
+        start: "#1F2937",
+        end: "rgba(31, 41, 55, 0)",
       },
     },
 
@@ -454,23 +480,23 @@ export const shadows = {
     sm: {
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
+      shadowOpacity: 0.08,
+      shadowRadius: 3,
       elevation: 1,
     },
     card: {
       shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.08,
-      shadowRadius: 3,
-      elevation: 2,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 4,
     },
     elevated: {
       shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.07,
-      shadowRadius: 6,
-      elevation: 4,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.14,
+      shadowRadius: 12,
+      elevation: 6,
     },
     button: {
       shadowColor: "#000",

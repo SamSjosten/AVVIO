@@ -36,6 +36,17 @@ interface BrandColor {
   contrast: string;
 }
 
+interface GradientStops {
+  start: string;
+  end: string;
+}
+
+interface ThemeGradients {
+  primary: { start: string; middle: string; end: string };
+  background: GradientStops;
+  headerFade: GradientStops;
+}
+
 interface ThemeColors {
   primary: BrandColor;
   energy: BrandColor;
@@ -45,6 +56,7 @@ interface ThemeColors {
   error: string;
   info: string;
   background: string;
+  backgroundGradient: GradientStops;
   surface: string;
   surfaceElevated: string;
   surfacePressed: string;
@@ -55,6 +67,7 @@ interface ThemeColors {
   textSecondary: string;
   textMuted: string;
   textInverse: string;
+  gradient: ThemeGradients;
   overlay: string;
   scrim: string;
 }

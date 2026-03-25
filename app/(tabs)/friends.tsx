@@ -20,6 +20,7 @@ import {
   Alert,
   Keyboard,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/providers/ThemeProvider";
@@ -182,6 +183,13 @@ export default function FriendsScreenV2() {
       edges={["top"]}
       testID={TestIDs.screensV2?.friends || "friends-screen-v2"}
     >
+      {/* Subtle gradient background for depth */}
+      <LinearGradient
+        colors={[colors.backgroundGradient.start, colors.backgroundGradient.end]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      />
       {/* Header */}
       <View style={[styles.headerContainer, { backgroundColor: colors.surface }]}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>Friends</Text>

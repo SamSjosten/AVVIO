@@ -204,7 +204,7 @@ function LeaderboardRow({
         style={[
           styles.avatar,
           {
-            backgroundColor: isCurrentUser ? colors.primary.subtle : `${colors.textMuted}20`,
+            backgroundColor: isCurrentUser ? colors.primary.subtle : `${colors.textMuted}30`,
           },
         ]}
       >
@@ -254,7 +254,7 @@ function LeaderboardRow({
 // ============================================================================
 
 export function HeroStatCard({ challenge }: HeroStatCardProps) {
-  const { colors, spacing, radius } = useAppTheme();
+  const { colors, shadows, spacing, radius } = useAppTheme();
   const { user } = useAuth();
   const currentUserId = user?.id;
 
@@ -310,6 +310,7 @@ export function HeroStatCard({ challenge }: HeroStatCardProps) {
       accessibilityLabel={`View ${challenge.title} details`}
       style={[
         styles.container,
+        shadows.card,
         {
           backgroundColor: colors.surface,
           borderRadius: radius["2xl"],
@@ -468,7 +469,7 @@ export function HeroStatCard({ challenge }: HeroStatCardProps) {
               style={[
                 styles.skeletonRow,
                 {
-                  backgroundColor: `${colors.textMuted}15`,
+                  backgroundColor: `${colors.textMuted}25`,
                   borderRadius: radius.sm,
                 },
               ]}

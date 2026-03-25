@@ -46,7 +46,7 @@ export function ActivityCard({
   challengeName,
   onPress,
 }: ActivityCardProps) {
-  const { colors, spacing, radius } = useAppTheme();
+  const { colors, shadows, spacing, radius } = useAppTheme();
   const IconComponent = getActivityIcon(type);
   const typeColors = activityColors[type] || activityColors.custom;
 
@@ -75,6 +75,7 @@ export function ActivityCard({
       disabled={!onPress}
       style={[
         styles.container,
+        shadows.sm,
         {
           backgroundColor: colors.surface,
           borderRadius: radius.xl,
@@ -202,7 +203,7 @@ export function ActivityListItem({
   onPress,
   showBorder = true,
 }: ActivityListItemProps) {
-  const { colors, spacing, radius } = useAppTheme();
+  const { colors, shadows, spacing, radius } = useAppTheme();
   const IconComponent = getActivityIcon(type);
   const typeColors = activityColors[type] || activityColors.custom;
 

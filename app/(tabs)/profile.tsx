@@ -4,6 +4,7 @@
 
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAppTheme } from "@/providers/ThemeProvider";
@@ -20,7 +21,7 @@ import {
 } from "react-native-heroicons/outline";
 
 export default function ProfileScreenV2() {
-  const { colors, spacing, radius } = useAppTheme();
+  const { colors, shadows, spacing, radius } = useAppTheme();
   const { profile, signOut } = useAuth();
 
   const stats = useMemo(
@@ -64,6 +65,13 @@ export default function ProfileScreenV2() {
       style={[styles.container, { backgroundColor: colors.background }]}
       testID={TestIDs.screensV2?.profile || "profile-screen-v2"}
     >
+      {/* Subtle gradient background for depth */}
+      <LinearGradient
+        colors={[colors.backgroundGradient.start, colors.backgroundGradient.end]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      />
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { padding: spacing.lg }]}
         showsVerticalScrollIndicator={false}
@@ -84,6 +92,7 @@ export default function ProfileScreenV2() {
         <View
           style={[
             styles.profileCard,
+            shadows.card,
             {
               backgroundColor: colors.surface,
               borderRadius: radius.xl,
@@ -112,6 +121,7 @@ export default function ProfileScreenV2() {
               key={index}
               style={[
                 styles.statCard,
+                shadows.sm,
                 {
                   backgroundColor: colors.surface,
                   borderRadius: radius.lg,

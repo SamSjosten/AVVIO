@@ -2,13 +2,14 @@
 // Animated progress bar with variant colors
 
 import React from "react";
-import { View, Animated } from "react-native";
+import { View, Animated, StyleSheet } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { radius } from "@/constants/theme";
 import { useAppTheme } from "@/providers/ThemeProvider";
 
 export interface ProgressBarProps {
   progress: number; // 0-100
-  variant?: "primary" | "energy" | "achievement";
+  variant?: "primary" | "energy" | "achievement" | "gradient";
   size?: "small" | "medium" | "large";
   animated?: boolean;
 }
@@ -35,10 +36,12 @@ export function ProgressBar({
     } else {
       animatedWidth.setValue(clampedProgress);
     }
-  }, [clampedProgress, animated]);
+  }, [animated, animatedWidth, clampedProgress]);
 
   const getVariantColor = () => {
     switch (variant) {
+      case "gradient":
+        return { bg: colors.primary.subtle, fill: null };
       case "energy":
         return { bg: colors.energy.subtle, fill: colors.energy.main };
       case "achievement":
@@ -74,14 +77,24 @@ export function ProgressBar({
       <Animated.View
         style={{
           height: "100%",
-          backgroundColor: variantColor.fill,
           borderRadius: radius.progressBar,
           width: animatedWidth.interpolate({
             inputRange: [0, 100],
             outputRange: ["0%", "100%"],
           }),
+          overflow: "hidden",
+          backgroundColor: variant === "gradient" ? "transparent" : variantColor.fill || "transparent",
         }}
-      />
+      >
+        {variant === "gradient" ? (
+          <LinearGradient
+            colors={[colors.primary.main, colors.energy.main]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={StyleSheet.absoluteFill}
+          />
+        ) : null}
+      </Animated.View>
     </View>
   );
 }

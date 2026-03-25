@@ -3,9 +3,11 @@
 // Design System
 
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from "react-native";
 import { useAppTheme } from "@/providers/ThemeProvider";
 import { CheckIcon, XMarkIcon, UserIcon, ChevronRightIcon } from "react-native-heroicons/outline";
+import { getChallengeTypeImage } from "@/constants/challengeTypeImages";
+import { getDaysRemaining } from "@/lib/serverTime";
 import type { PendingInvite } from "@/services/challenges";
 
 export interface InviteCardProps {
@@ -179,45 +181,60 @@ export interface InviteRowProps {
 
 export function InviteRow({ invite, onPress }: InviteRowProps) {
   const { colors, spacing, radius } = useAppTheme();
-
-  const creatorName = invite.creator?.display_name || invite.creator?.username || "Someone";
+  const daysRemaining = getDaysRemaining(invite.challenge.end_date);
+  const imageSource = getChallengeTypeImage(invite.challenge.challenge_type, invite.challenge.id);
 
   return (
     <TouchableOpacity
-      style={[
-        styles.rowContainer,
-        {
-          backgroundColor: colors.energy.subtle,
-          borderRadius: radius.lg,
-          borderWidth: 1,
-          borderColor: colors.energy.main,
-          padding: spacing.md,
-        },
-      ]}
+      style={styles.rowTouchable}
       onPress={onPress}
-      activeOpacity={0.7}
+      activeOpacity={0.9}
+      accessibilityRole="button"
+      accessibilityLabel={`Open invite for ${invite.challenge.title}`}
     >
-      <View style={styles.rowContent}>
-        <Text style={[styles.rowTitle, { color: colors.textPrimary }]} numberOfLines={1}>
-          {invite.challenge.title}
-        </Text>
-        <Text style={[styles.rowMeta, { color: colors.energy.dark }]}>
-          From {creatorName} • Tap to view
-        </Text>
-      </View>
-      <View
-        style={[
-          styles.newBadge,
-          {
-            backgroundColor: colors.energy.main,
-            borderRadius: radius.full,
-            paddingHorizontal: spacing.sm,
-            paddingVertical: 4,
-          },
-        ]}
+      <ImageBackground
+        source={imageSource}
+        style={styles.rowBackground}
+        imageStyle={{ borderRadius: radius.xl }}
       >
-        <Text style={styles.newBadgeText}>New</Text>
-      </View>
+        <View
+          style={[
+            styles.rowOverlay,
+            {
+              backgroundColor: colors.overlay,
+              borderRadius: radius.xl,
+              padding: spacing.lg,
+            },
+          ]}
+        >
+          <View style={styles.rowTop}>
+            <Text style={styles.rowTitle} numberOfLines={2}>
+              {invite.challenge.title}
+            </Text>
+            <Text style={styles.rowDays}>
+              {daysRemaining} day{daysRemaining !== 1 ? "s" : ""} left
+            </Text>
+          </View>
+
+          <View style={styles.rowBottom}>
+            <Text style={styles.rowProgress} numberOfLines={1}>
+              0/{invite.challenge.goal_value.toLocaleString()} {invite.challenge.goal_unit}
+            </Text>
+
+            <View
+              style={[
+                styles.joinPill,
+                {
+                  backgroundColor: colors.energy.main,
+                  borderRadius: radius.full,
+                },
+              ]}
+            >
+              <Text style={styles.joinPillText}>Join</Text>
+            </View>
+          </View>
+        </View>
+      </ImageBackground>
     </TouchableOpacity>
   );
 }
@@ -311,21 +328,56 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   // Row styles
-  rowContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+  rowTouchable: {
+    borderRadius: 12,
   },
-  rowContent: {
-    flex: 1,
-    marginRight: 12,
+  rowBackground: {
+    minHeight: 140,
+    justifyContent: "flex-end",
+  },
+  rowOverlay: {
+    minHeight: 140,
+    justifyContent: "space-between",
+  },
+  rowTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
   },
   rowTitle: {
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans_600SemiBold",
-    marginBottom: 2,
+    flex: 1,
+    color: "#FFFFFF",
+    fontSize: 18,
+    lineHeight: 22,
+    fontFamily: "PlusJakartaSans_700Bold",
   },
-  rowMeta: {
-    fontSize: 13,
+  rowDays: {
+    color: "#FFFFFF",
+    fontSize: 12,
     fontFamily: "PlusJakartaSans_500Medium",
+  },
+  rowBottom: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    gap: 12,
+  },
+  rowProgress: {
+    flex: 1,
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontFamily: "PlusJakartaSans_600SemiBold",
+  },
+  joinPill: {
+    minHeight: 36,
+    paddingHorizontal: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  joinPillText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontFamily: "PlusJakartaSans_700Bold",
   },
 });
