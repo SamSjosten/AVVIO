@@ -3,15 +3,14 @@
 // Design System v2.0 - Based on mockup home-screen-expandable.jsx
 //
 // Features:
-// - "Welcome, {name}" header with notification bell
-// - Streak badge in header when banner is dismissed
-// - Animated streak banner with swipe-to-dismiss
+// - "Welcome, {name}" header with notification bell + streak badge
+// - Toast celebration when streak increments (new day detection)
 // - In Progress section with filter dropdown
 // - Starting Soon section (amber themed)
 // - Recent Activity section
 // - Completed challenges (collapsible card-style section)
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -38,8 +37,8 @@ import {
   ActiveFilterBadge,
 } from "@/components/shared";
 import {
-  StreakBanner,
   ActivityRow,
+  ActivityRunRow,
   RecentActivityHeader,
   NoRecentActivity,
   ExpandableChallengeCard,
@@ -47,6 +46,7 @@ import {
   StartingSoonCard,
   HeroStatCard,
 } from "@/components/home";
+import { getActivityTypeName } from "@/hooks/useActivities";
 import { useToast } from "@/providers/ToastProvider";
 import { extractErrorMessage } from "@/lib/extractErrorMessage";
 import { BiometricSetupModal } from "@/components/BiometricSetupModal";
@@ -60,7 +60,7 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const STREAK_BANNER_STORAGE_KEY = "fitchallenge_streak_banner_dismissed";
+const LAST_SEEN_STREAK_KEY = "fitchallenge_last_seen_streak";
 
 const ACCORDION_ANIMATION = {
   duration: 200,
@@ -118,8 +118,8 @@ export default function HomeScreenV2() {
   // Accordion state: only one challenge card expanded at a time
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
 
-  // Track if streak banner is dismissed (show badge in header)
-  const [streakBannerDismissed, setStreakBannerDismissed] = useState(false);
+  // Streak toast: fire once per mount when streak has incremented
+  const streakToastFired = useRef(false);
 
   // Biometric setup modal state (shown after sign-in if eligible)
   const [showBiometricSetup, setShowBiometricSetup] = useState(false);
@@ -128,21 +128,28 @@ export default function HomeScreenV2() {
     password: string;
   } | null>(null);
 
-  // Check if streak banner was dismissed today on mount
+  // Show toast when streak has incremented since last session
   useEffect(() => {
-    const checkStreakBannerDismissed = async () => {
+    if (streakToastFired.current || !currentStreak || currentStreak <= 0) return;
+    streakToastFired.current = true;
+
+    const checkStreakIncrement = async () => {
       try {
-        const dismissedDate = await AsyncStorage.getItem(STREAK_BANNER_STORAGE_KEY);
-        const today = new Date().toDateString();
-        if (dismissedDate === today) {
-          setStreakBannerDismissed(true);
+        const stored = await AsyncStorage.getItem(LAST_SEEN_STREAK_KEY);
+        const lastSeen = stored ? parseInt(stored, 10) : 0;
+        if (currentStreak > lastSeen) {
+          showToast(`🔥 ${currentStreak} Day Streak! Keep going!`, {
+            variant: "success",
+            duration: 4000,
+          });
+          await AsyncStorage.setItem(LAST_SEEN_STREAK_KEY, String(currentStreak));
         }
       } catch (error) {
-        console.error("Error checking streak banner state:", error);
+        console.error("Error checking streak increment:", error);
       }
     };
-    checkStreakBannerDismissed();
-  }, []);
+    checkStreakIncrement();
+  }, [currentStreak, showToast]);
 
   // Check for pending biometric setup on mount
   useEffect(() => {
@@ -180,31 +187,6 @@ export default function HomeScreenV2() {
   const toggleCompleted = () => {
     LayoutAnimation.configureNext(ACCORDION_ANIMATION);
     setCompletedExpanded(!completedExpanded);
-  };
-
-  const handleStreakDismiss = async () => {
-    setStreakBannerDismissed(true);
-
-    // Persist dismissal for today
-    const today = new Date().toDateString();
-    try {
-      await AsyncStorage.setItem(STREAK_BANNER_STORAGE_KEY, today);
-    } catch (error) {
-      console.error("Error saving streak banner state:", error);
-    }
-
-    // Show undo toast
-    showToast("Streak moved to Profile", {
-      actionLabel: "Undo",
-      onAction: async () => {
-        setStreakBannerDismissed(false);
-        try {
-          await AsyncStorage.removeItem(STREAK_BANNER_STORAGE_KEY);
-        } catch (error) {
-          console.error("Error clearing streak banner state:", error);
-        }
-      },
-    });
   };
 
   // Toggle challenge card expansion (accordion - only one at a time)
@@ -274,8 +256,8 @@ export default function HomeScreenV2() {
           </Text>
 
           <View style={styles.headerRight}>
-            {/* Streak badge - shown when banner is dismissed */}
-            {streakBannerDismissed && currentStreak > 0 && (
+            {/* Streak badge */}
+            {currentStreak > 0 && (
               <View style={[styles.streakBadge, { backgroundColor: "rgba(255, 150, 50, 0.15)" }]}>
                 <FireIcon size={14} color="#FF9632" />
                 <Text style={styles.streakBadgeText}>{currentStreak}</Text>
@@ -300,15 +282,6 @@ export default function HomeScreenV2() {
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* ================================================================ */}
-        {/* STREAK BANNER - Swipe to dismiss */}
-        {/* ================================================================ */}
-        {!streakBannerDismissed && currentStreak > 0 && (
-          <View style={{ marginTop: spacing.lg }}>
-            <StreakBanner streak={currentStreak} onDismiss={handleStreakDismiss} />
-          </View>
-        )}
 
         {/* ================================================================ */}
         {/* ERROR BANNER */}
@@ -484,20 +457,40 @@ export default function HomeScreenV2() {
                 },
               ]}
             >
-              {displayActivities.map((activity, index) => (
-                <ActivityRow
-                  key={activity.id}
-                  id={activity.id}
-                  type={activity.activity_type as ActivityType}
-                  name={activity.name}
-                  duration={Math.round(activity.value / 60) || activity.value}
-                  date={activity.displayDate}
-                  time={activity.displayTime}
-                  points={activity.points}
-                  onPress={() => router.push(`/activity/${activity.id}`)}
-                  showBorder={index < displayActivities.length - 1}
-                />
-              ))}
+              {displayActivities.map((item, index) => {
+                const isLast = index === displayActivities.length - 1;
+
+                if (item.kind === "single") {
+                  const activity = item.activity;
+                  return (
+                    <ActivityRow
+                      key={activity.id}
+                      id={activity.id}
+                      type={activity.activity_type as ActivityType}
+                      name={activity.name}
+                      value={activity.value}
+                      unit={activity.unit}
+                      date={activity.displayDate}
+                      time={activity.displayTime}
+                      onPress={() => router.push(`/activity/${activity.id}`)}
+                      showBorder={!isLast}
+                    />
+                  );
+                }
+
+                // collapsedRun — non-expandable on home
+                return (
+                  <ActivityRunRow
+                    key={item.runKey}
+                    type={item.type as ActivityType}
+                    name={getActivityTypeName(item.type)}
+                    totalValue={item.totalValue}
+                    unit={item.unit}
+                    onPress={() => router.push("/activity")}
+                    showBorder={!isLast}
+                  />
+                );
+              })}
             </View>
           )}
         </View>

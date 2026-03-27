@@ -8,6 +8,7 @@ import { router, useLocalSearchParams, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/providers/ThemeProvider";
 import { useActivityDetail } from "@/hooks/useActivities";
+import { calculateActivityPoints } from "@/lib/activityPoints";
 import { LoadingState } from "@/components/shared";
 import {
   ChevronLeftIcon,
@@ -92,20 +93,8 @@ export default function ActivityDetailScreen() {
     return names[type] || "Activity";
   };
 
-  // Calculate points (simplified)
-  const calculatePoints = (value: number, type: string) => {
-    if (type === "workout_points" || type === "workouts") {
-      return value;
-    }
-
-    const multiplier: Record<string, number> = {
-      steps: 0.01,
-      active_minutes: 1,
-      distance: 5,
-      calories: 0.01,
-    };
-    return Math.round(value * (multiplier[type] || 1));
-  };
+  const calculatePoints = (value: number, type: string) =>
+    calculateActivityPoints(value, type, activity?.unit, activity?.workout_activity_key);
 
   // Error state
   if (isError) {

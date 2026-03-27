@@ -16,10 +16,10 @@ export interface ActivityRowProps {
   id: string;
   type: ActivityType;
   name: string;
-  duration: number; // in minutes
+  value: number;
+  unit: string;
   date: string; // "Today", "Yesterday", etc.
   time: string; // "7:32 AM"
-  points: number;
   onPress?: () => void;
   showBorder?: boolean;
 }
@@ -28,10 +28,10 @@ export function ActivityRow({
   id,
   type,
   name,
-  duration,
+  value,
+  unit,
   date,
   time,
-  points,
   onPress,
   showBorder = true,
 }: ActivityRowProps) {
@@ -69,13 +69,12 @@ export function ActivityRow({
       <View style={styles.infoContainer}>
         <Text style={[styles.name, { color: colors.textPrimary }]}>{name}</Text>
         <Text style={[styles.meta, { color: colors.textSecondary }]}>
-          {duration} min • {date}
+          {value.toLocaleString()} {unit} · {date}
         </Text>
       </View>
 
-      {/* Points & Time */}
+      {/* Time */}
       <View style={styles.statsContainer}>
-        <Text style={[styles.points, { color: colors.primary.main }]}>{points} pts</Text>
         <Text style={[styles.time, { color: colors.textMuted }]}>{time}</Text>
       </View>
     </TouchableOpacity>
@@ -150,6 +149,65 @@ export function ActivityRowCompact({
         </Text>
         <Text style={[styles.compactUnit, { color: colors.textSecondary }]}>{unit}</Text>
       </View>
+    </TouchableOpacity>
+  );
+}
+
+// Compact run summary for home screen (non-expandable)
+export interface ActivityRunRowProps {
+  type: ActivityType;
+  name: string;
+  totalValue: number;
+  unit: string;
+  onPress?: () => void;
+  showBorder?: boolean;
+}
+
+export function ActivityRunRow({
+  type,
+  name,
+  totalValue,
+  unit,
+  onPress,
+  showBorder = true,
+}: ActivityRunRowProps) {
+  const { colors, spacing, radius } = useAppTheme();
+  const IconComponent = getActivityIcon(type);
+  const typeColors = activityColors[type] || activityColors.custom;
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[
+        styles.container,
+        showBorder && {
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        },
+      ]}
+      activeOpacity={0.7}
+      disabled={!onPress}
+    >
+      <View
+        style={[
+          styles.iconContainer,
+          {
+            backgroundColor: typeColors.bg,
+            borderRadius: radius.md,
+          },
+        ]}
+      >
+        <IconComponent size={18} color={typeColors.text} />
+      </View>
+
+      <View style={styles.infoContainer}>
+        <Text style={[styles.name, { color: colors.textPrimary }]}>{name}</Text>
+        <Text style={[styles.meta, { color: colors.textSecondary }]}>
+          {totalValue.toLocaleString()} {unit}
+        </Text>
+      </View>
+
+      <View style={styles.statsContainer} />
     </TouchableOpacity>
   );
 }

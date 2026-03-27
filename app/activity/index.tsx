@@ -7,18 +7,20 @@ import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } 
 import { router, useFocusEffect, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/providers/ThemeProvider";
-import { useRecentActivities, toDisplayActivity } from "@/hooks/useActivities";
+import { useRecentActivities, toDisplayActivity, getActivityTypeName } from "@/hooks/useActivities";
 import { LoadingState, EmptyState } from "@/components/shared";
-import { ActivityListItem } from "@/components/shared/ActivityCard";
+import { ActivityListItem, ActivityRunSummary } from "@/components/shared/ActivityCard";
 import { ChevronLeftIcon } from "react-native-heroicons/outline";
-import { groupActivitiesByDate } from "@/lib/activityGrouping";
+import { groupActivitiesByDate, buildActivityRenderModel } from "@/lib/activityGrouping";
+import type { RenderItem } from "@/lib/activityGrouping";
 import type { ActivityType } from "@/components/icons/ActivityIcons";
 
 export default function ActivityHistoryScreen() {
   const { colors, spacing, radius } = useAppTheme();
   const [refreshing, setRefreshing] = useState(false);
+  const [expandedRuns, setExpandedRuns] = useState<Set<string>>(new Set());
 
-  const { data: activities, isLoading, refetch } = useRecentActivities(50); // Get more activities for history
+  const { data: activities, isLoading, refetch } = useRecentActivities(50);
 
   // Refresh on focus
   useFocusEffect(
@@ -37,16 +39,23 @@ export default function ActivityHistoryScreen() {
     return groupActivitiesByDate(displayActivities);
   }, [displayActivities]);
 
+  // Build render model per group
+  const groupedRenderItems = useMemo(() => {
+    const result: Record<string, RenderItem[]> = {};
+    for (const [group, items] of Object.entries(groupedActivities)) {
+      result[group] = buildActivityRenderModel(items);
+    }
+    return result;
+  }, [groupedActivities]);
+
   // Get ordered group keys (most recent first)
   const groupOrder = useMemo(() => {
     const keys = Object.keys(groupedActivities);
-    // Sort by date - Today and Yesterday first, then by actual date
     return keys.sort((a, b) => {
       if (a === "Today") return -1;
       if (b === "Today") return 1;
       if (a === "Yesterday") return -1;
       if (b === "Yesterday") return 1;
-      // For other dates, parse and compare
       const dateA = new Date(groupedActivities[a][0].recorded_at);
       const dateB = new Date(groupedActivities[b][0].recorded_at);
       return dateB.getTime() - dateA.getTime();
@@ -62,6 +71,18 @@ export default function ActivityHistoryScreen() {
   const handleActivityPress = (activityId: string) => {
     router.push(`/activity/${activityId}`);
   };
+
+  const toggleRun = useCallback((runKey: string) => {
+    setExpandedRuns((prev) => {
+      const next = new Set(prev);
+      if (next.has(runKey)) {
+        next.delete(runKey);
+      } else {
+        next.add(runKey);
+      }
+      return next;
+    });
+  }, []);
 
   // Loading state
   if (isLoading && !activities) {
@@ -133,8 +154,8 @@ export default function ActivityHistoryScreen() {
         ) : (
           <>
             {groupOrder.map((group) => {
-              const groupActivities = groupedActivities[group];
-              if (!groupActivities || groupActivities.length === 0) return null;
+              const renderItems = groupedRenderItems[group];
+              if (!renderItems || renderItems.length === 0) return null;
 
               return (
                 <View key={group} style={{ marginTop: spacing.md }}>
@@ -164,19 +185,55 @@ export default function ActivityHistoryScreen() {
                       },
                     ]}
                   >
-                    {groupActivities.map((activity, index) => (
-                      <ActivityListItem
-                        key={activity.id}
-                        type={activity.activity_type as ActivityType}
-                        name={activity.name}
-                        value={activity.value}
-                        unit={activity.unit}
-                        points={activity.points}
-                        recordedAt={new Date(activity.recorded_at)}
-                        onPress={() => handleActivityPress(activity.id)}
-                        showBorder={index < groupActivities.length - 1}
-                      />
-                    ))}
+                    {renderItems.map((item, index) => {
+                      const isLast = index === renderItems.length - 1;
+
+                      if (item.kind === "single") {
+                        return (
+                          <ActivityListItem
+                            key={item.activity.id}
+                            type={item.activity.activity_type as ActivityType}
+                            name={item.activity.name}
+                            value={item.activity.value}
+                            unit={item.activity.unit}
+                            recordedAt={new Date(item.activity.recorded_at)}
+                            onPress={() => handleActivityPress(item.activity.id)}
+                            showBorder={!isLast}
+                          />
+                        );
+                      }
+
+                      // collapsedRun
+                      const isExpanded = expandedRuns.has(item.runKey);
+                      return (
+                        <View key={item.runKey}>
+                          <ActivityRunSummary
+                            type={item.type as ActivityType}
+                            name={getActivityTypeName(item.type)}
+                            totalValue={item.totalValue}
+                            unit={item.unit}
+                            expanded={isExpanded}
+                            onToggle={() => toggleRun(item.runKey)}
+                            showBorder={!isLast || isExpanded}
+                          />
+                          {isExpanded &&
+                            item.activities.map((child, childIdx) => (
+                              <ActivityListItem
+                                key={child.id}
+                                type={child.activity_type as ActivityType}
+                                name={child.name}
+                                value={child.value}
+                                unit={child.unit}
+                                recordedAt={new Date(child.recorded_at)}
+                                onPress={() => handleActivityPress(child.id)}
+                                showBorder={
+                                  childIdx < item.activities.length - 1 || !isLast
+                                }
+                              />
+                            ))}
+                        </View>
+                      );
+                    })}
                   </View>
                 </View>
               );

@@ -186,9 +186,9 @@ export default function PointsExplainerScreen() {
         <PointsRule
           icon={<DumbbellIcon size={20} color={colors.primary.main} />}
           title="Workouts"
-          description="Complete any workout to earn a flat bonus. Strength, yoga, HIIT - they all count!"
-          example="1 workout = 10 points"
-          points="10 pts per workout"
+          description="Earn points based on workout duration and intensity. Higher-intensity workouts like running (1.3x) and HIIT (1.3x) earn more per minute than lighter ones like yoga (0.8x)."
+          example="30 min running = 39 pts"
+          points="duration x intensity"
         />
 
         <PointsRule

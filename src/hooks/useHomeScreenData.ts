@@ -23,6 +23,7 @@ import {
   useRespondToInvite,
 } from "@/hooks/useChallenges";
 import { useRecentActivities, toDisplayActivity } from "@/hooks/useActivities";
+import { buildActivityRenderModel, type RenderItem } from "@/lib/activityGrouping";
 import { useUnreadNotificationCount } from "@/hooks/useNotifications";
 import { useAuth } from "@/providers/AuthProvider";
 import { pushTokenService } from "@/services/pushTokens";
@@ -39,7 +40,7 @@ export interface HomeScreenData {
   recentActivities: ReturnType<typeof useRecentActivities>["data"];
 
   // View model
-  displayActivities: ReturnType<typeof toDisplayActivity>[];
+  displayActivities: RenderItem[];
   displayName: string;
   currentStreak: number;
   unreadCount: number | undefined;
@@ -142,16 +143,17 @@ export function useHomeScreenData(): HomeScreenData {
 
   const { data: completedChallenges, isError: errorCompleted, refetch: refetchCompleted } = useCompletedChallenges();
 
-  const { data: recentActivities, isError: errorActivities, refetch: refetchActivities } = useRecentActivities(5);
+  const { data: recentActivities, isError: errorActivities, refetch: refetchActivities } = useRecentActivities(20);
 
   const { data: unreadCount, isError: errorUnread } = useUnreadNotificationCount();
 
   const respondToInvite = useRespondToInvite();
 
-  // Transform activities for display (limit to 2 for home screen)
+  // Transform activities, build render model, limit to 2 for home screen
   const displayActivities = useMemo(() => {
     if (!recentActivities) return [];
-    return recentActivities.slice(0, 2).map(toDisplayActivity);
+    const transformed = recentActivities.map(toDisplayActivity);
+    return buildActivityRenderModel(transformed).slice(0, 2);
   }, [recentActivities]);
 
   // Profile-derived values

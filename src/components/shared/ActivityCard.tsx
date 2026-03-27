@@ -10,7 +10,14 @@ import {
   activityColors,
   type ActivityType,
 } from "@/components/icons/ActivityIcons";
-import { ClockIcon, FireIcon, HeartIcon, MapPinIcon } from "react-native-heroicons/outline";
+import {
+  ClockIcon,
+  FireIcon,
+  HeartIcon,
+  MapPinIcon,
+  ChevronRightIcon,
+  ChevronDownIcon,
+} from "react-native-heroicons/outline";
 import { getDayLabel } from "@/lib/serverTime";
 
 export interface ActivityCardProps {
@@ -187,7 +194,6 @@ export interface ActivityListItemProps {
   name: string;
   value: number;
   unit: string;
-  points: number;
   recordedAt: Date;
   onPress?: () => void;
   showBorder?: boolean;
@@ -198,7 +204,6 @@ export function ActivityListItem({
   name,
   value,
   unit,
-  points,
   recordedAt,
   onPress,
   showBorder = true,
@@ -246,9 +251,68 @@ export function ActivityListItem({
         </Text>
       </View>
 
-      <View style={styles.listItemPoints}>
-        <Text style={[styles.listItemPointsValue, { color: colors.primary.main }]}>+{points}</Text>
-        <Text style={[styles.listItemPointsLabel, { color: colors.textMuted }]}>pts</Text>
+    </TouchableOpacity>
+  );
+}
+
+// Collapsible run summary for grouped health entries
+export interface ActivityRunSummaryProps {
+  type: ActivityType;
+  name: string;
+  totalValue: number;
+  unit: string;
+  expanded: boolean;
+  onToggle: () => void;
+  showBorder?: boolean;
+}
+
+export function ActivityRunSummary({
+  type,
+  name,
+  totalValue,
+  unit,
+  expanded,
+  onToggle,
+  showBorder = true,
+}: ActivityRunSummaryProps) {
+  const { colors, spacing, radius } = useAppTheme();
+  const IconComponent = getActivityIcon(type);
+  const typeColors = activityColors[type] || activityColors.custom;
+  const ChevronIcon = expanded ? ChevronDownIcon : ChevronRightIcon;
+
+  return (
+    <TouchableOpacity
+      onPress={onToggle}
+      activeOpacity={0.7}
+      style={[
+        styles.listItem,
+        showBorder && {
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.listItemIcon,
+          {
+            backgroundColor: typeColors.bg,
+            borderRadius: radius.md,
+          },
+        ]}
+      >
+        <IconComponent size={18} color={typeColors.text} />
+      </View>
+
+      <View style={styles.listItemContent}>
+        <Text style={[styles.listItemName, { color: colors.textPrimary }]}>{name}</Text>
+        <Text style={[styles.listItemMeta, { color: colors.textSecondary }]}>
+          {totalValue.toLocaleString()} {unit}
+        </Text>
+      </View>
+
+      <View style={styles.runSummaryRight}>
+        <ChevronIcon size={16} color={colors.textMuted} />
       </View>
     </TouchableOpacity>
   );
@@ -361,6 +425,11 @@ const styles = StyleSheet.create({
   },
   listItemPointsLabel: {
     fontSize: 11,
+  },
+  runSummaryRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 });
 

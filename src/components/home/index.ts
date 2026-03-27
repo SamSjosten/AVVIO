@@ -16,18 +16,16 @@ export type { StartingSoonCardProps } from "./StartingSoonCard";
 export { HeroStatCard } from "./HeroStatCard";
 export type { HeroStatCardProps } from "./HeroStatCard";
 
-// Home-screen-only components
-export { StreakBanner } from "./StreakBanner";
-export type { StreakBannerProps } from "./StreakBanner";
-
 export {
   ActivityRow,
   ActivityRowCompact,
+  ActivityRunRow,
   RecentActivityHeader,
   NoRecentActivity,
 } from "./ActivityRow";
 export type {
   ActivityRowProps,
   ActivityRowCompactProps,
+  ActivityRunRowProps,
   RecentActivityHeaderProps,
 } from "./ActivityRow";

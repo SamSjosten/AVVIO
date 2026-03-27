@@ -40,6 +40,8 @@ export {
 export {
   ActivityCard,
   ActivityListItem,
+  ActivityRunSummary,
   type ActivityCardProps,
   type ActivityListItemProps,
+  type ActivityRunSummaryProps,
 } from "./ActivityCard";

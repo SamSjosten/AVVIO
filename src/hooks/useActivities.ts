@@ -8,6 +8,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { activityKeys } from "@/lib/queryKeys";
 import type { ActivityLog } from "@/types/database-helpers";
 import { formatDate } from "@/lib/formatDate";
+import { calculateActivityPoints } from "@/lib/activityPoints";
 
 // =============================================================================
 // QUERY KEYS — re-exported from @/lib/queryKeys for backward compatibility
@@ -120,19 +121,12 @@ export function toDisplayActivity(activity: ActivityLog): DisplayActivity {
     minute: "2-digit",
   });
 
-  // Simple points calculation - can be enhanced
-  // Based on activity type and value
-  const pointsMultiplier: Record<string, number> = {
-    steps: 0.01, // 1 point per 100 steps
-    active_minutes: 1, // 1 point per minute
-    workouts: 10, // 10 points per workout
-    distance: 5, // 5 points per unit (mile/km)
-    calories: 0.01, // 1 point per 100 kcal
-    custom: 1,
-  };
-
-  const multiplier = pointsMultiplier[activity.activity_type] || 1;
-  const points = Math.round(activity.value * multiplier);
+  const points = calculateActivityPoints(
+    activity.value,
+    activity.activity_type,
+    activity.unit,
+    activity.workout_activity_key,
+  );
 
   return {
     ...activity,
